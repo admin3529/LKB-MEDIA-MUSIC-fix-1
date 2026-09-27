@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>LKB Media Music — Quản trị key</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1020;--panel:#111a2a;--panel2:#182438;--line:#2a3a52;--text:#e8efff;--muted:#9aa9bf;--mint:#68e6c2;--red:#fb7185;--amber:#ffca76}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0%,#1a3150 0,transparent 34%),var(--bg);color:var(--text);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
+    header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 24px;border-bottom:1px solid var(--line);background:#101a2aee;backdrop-filter:blur(14px)}
+    .brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#7df0d0,#31b898);color:#08211b;font-weight:900}
+    h1{margin:0;font-size:17px}.subtitle{color:var(--muted);font-size:11px}.account{color:var(--mint);font-weight:700}
+    main{max-width:1200px;margin:auto;padding:26px 22px 50px}.card{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:18px;margin-bottom:17px}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px}.stat{padding:15px;border-radius:12px;background:var(--panel2)}.stat strong{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row.between{justify-content:space-between}h2{font-size:14px;margin:0 0 13px}.muted{color:var(--muted);font-size:12px}
+    input,select{min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#0c1422;color:var(--text);font:inherit}
+    input[type="text"]{flex:1;min-width:190px}input[type="password"]{width:100%}button{padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);font:600 12px system-ui;cursor:pointer}
+    button:hover{border-color:var(--mint)}button.primary{border-color:var(--mint);background:var(--mint);color:#08211b}button.danger{color:var(--red)}button:disabled{opacity:.55;cursor:wait}
+    .login{max-width:430px;margin:8vh auto}.login label{display:block;margin:12px 0 6px;color:var(--muted);font-size:12px}
+    .message{min-height:22px;margin:9px 0;color:var(--red);font-size:12px}.message.ok{color:var(--mint)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}table{width:100%;border-collapse:collapse;min-width:870px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}th{background:#172438;color:#aebcd0;font-size:11px;position:sticky;top:0}tr:last-child td{border-bottom:0}
+    .code{font:600 12px ui-monospace,Consolas,monospace;color:var(--mint);white-space:nowrap}.note{width:210px}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:#29384c;color:#d9e4f4;font-size:10px;white-space:nowrap}.pill.active{background:#12382f;color:var(--mint)}.pill.revoked{background:#40202a;color:#ff9aa7}.pill.expired{background:#3e3420;color:var(--amber)}
+    .login-view[hidden],.dashboard[hidden]{display:none}.file-input{display:none}.empty{text-align:center;color:var(--muted);padding:25px}
+    @media(max-width:700px){header{padding:14px 16px}main{padding:18px 12px}.grid{grid-template-columns:repeat(2,minmax(100px,1fr))}.account{display:none}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><div class="mark">LKB</div><div><h1>Trung tâm quản lý key</h1><div class="subtitle">Bảng quản trị riêng cho LKB Media Music</div></div></div>
+    <div class="row"><span class="account">LKB Media Music</span><button id="logoutButton" hidden>Đăng xuất</button></div>
+  </header>
+  <main>
+    <section id="loginView" class="card login login-view">
+      <h2>Đăng nhập quản trị</h2>
+      <p class="muted">Khu vực này không có liên kết trên trang chính; mọi dữ liệu key vẫn cần đăng nhập.</p>
+      <form id="loginForm">
+        <label for="username">Tài khoản</label><input id="username" type="text" value="LKB Media Music" autocomplete="username" required>
+        <label for="password">Mật khẩu</label><input id="password" type="password" autocomplete="current-password" required>
+        <div id="loginMessage" class="message" role="status"></div>
+        <button class="primary" type="submit">ĐĂNG NHẬP</button>
+      </form>
+    </section>
+
+    <section id="dashboard" class="dashboard" hidden>
+      <div class="card grid">
+        <div class="stat"><strong id="totalCount">0</strong><span>Tổng key</span></div>
+        <div class="stat"><strong id="unusedCount">0</strong><span>Chưa kích hoạt</span></div>
+        <div class="stat"><strong id="activeCount">0</strong><span>Đang hoạt động</span></div>
+        <div class="stat"><strong id="revokedCount">0</strong><span>Đã khóa</span></div>
+      </div>
+
+      <section class="card">
+        <div class="row between"><div><h2>Nhập bộ 103 key</h2><div class="muted">Chọn file CSV riêng tư để đưa mã vào cơ sở dữ liệu. File này không được tải lên cùng website.</div></div>
+          <div class="row"><input id="importFile" class="file-input" type="file" accept=".csv,text/csv"><button id="chooseImportButton">📥 Chọn CSV key</button></div>
+        </div>
+        <div id="importMessage" class="message" role="status"></div>
+      </section>
+
+      <section class="card">
+        <div class="row between"><div><h2>Cấp thêm key</h2><div class="muted">Mã mới bắt đầu bằng LKB- và được sinh ngẫu nhiên.</div></div>
+          <form id="createForm" class="row">
+            <select id="newPlan"><option value="1m">1 tháng</option><option value="3m">3 tháng</option><option value="6m">6 tháng</option><option value="lifetime">Vĩnh viễn</option></select>
+            <input id="newNote" type="text" placeholder="Ghi chú / người nhận">
+            <button class="primary" type="submit">TẠO KEY</button>
+          </form>
+        </div>
+        <div id="newKeyMessage" class="message" role="status"></div>
+      </section>
+
+      <section class="card">
+        <div class="row between">
+          <div><h2>Toàn bộ key</h2><div class="muted">Sửa ghi chú, xem hạn, khóa hoặc mở lại từng mã.</div></div>
+          <div class="row"><input id="search" type="text" placeholder="Tìm mã / ghi chú"><button id="exportButton">⬇ Tải CSV</button><button id="refreshButton">↻ Làm mới</button></div>
+        </div>
+        <div id="listMessage" class="message" role="status"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Mã key</th><th>Hạn</th><th>Trạng thái</th><th>Kích hoạt</th><th>Hết hạn</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
+          <tbody id="licenseRows"><tr><td class="empty" colspan="7">Đang tải...</td></tr></tbody>
+        </table></div>
+      </section>
+    </section>
+  </main>
+  <script>
+    const loginView=document.getElementById("loginView");
+    const dashboard=document.getElementById("dashboard");
+    const loginMessage=document.getElementById("loginMessage");
+    const listMessage=document.getElementById("listMessage");
+    const importMessage=document.getElementById("importMessage");
+    const newKeyMessage=document.getElementById("newKeyMessage");
+    const rowsEl=document.getElementById("licenseRows");
+    const logoutButton=document.getElementById("logoutButton");
+    let licenses=[];
+    const plans={ "1m":"1 tháng","3m":"3 tháng","6m":"6 tháng",lifetime:"Vĩnh viễn" };
+    const fmtDate=value=>value?new Intl.DateTimeFormat("vi-VN",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)):"—";
+    const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+    async function api(url,options={}){
+      const response=await fetch(url,{credentials:"same-origin",cache:"no-store",...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||"Có lỗi kết nối.");
+      return data;
+    }
+    function statusFor(item){
+      if(item.revokedAt)return ["Đã khóa","revoked"];
+      if(item.expiresAt&&item.expiresAt<=Date.now())return ["Hết hạn","expired"];
+      if(!item.activatedAt)return ["Chưa kích hoạt",""];
+      return ["Đang hoạt động","active"];
+    }
+    function render(){
+      const active=licenses.filter(item=>!item.revokedAt&&item.activatedAt&&(!item.expiresAt||item.expiresAt>Date.now())).length;
+      const unused=licenses.filter(item=>!item.revokedAt&&!item.activatedAt).length;
+      const revoked=licenses.filter(item=>!!item.revokedAt).length;
+      document.getElementById("totalCount").textContent=licenses.length;
+      document.getElementById("unusedCount").textContent=unused;
+      document.getElementById("activeCount").textContent=active;
+      document.getElementById("revokedCount").textContent=revoked;
+      const query=document.getElementById("search").value.trim().toLocaleLowerCase("vi");
+      const filtered=licenses.filter(item=>(item.code+" "+item.note).toLocaleLowerCase("vi").includes(query));
+      if(!filtered.length){rowsEl.innerHTML='<tr><td colspan="7" class="empty">Không có key phù hợp.</td></tr>';return;}
+      rowsEl.innerHTML=filtered.map(item=>{
+        const status=statusFor(item);
+        return '<tr data-id="'+esc(item.id)+'"><td class="code">'+esc(item.code)+'</td>'+
+          '<td>'+esc(plans[item.plan]||item.plan)+'</td>'+
+          '<td><span class="pill '+status[1]+'">'+status[0]+'</span></td>'+
+          '<td>'+fmtDate(item.activatedAt)+'</td><td>'+fmtDate(item.expiresAt)+'</td>'+
+          '<td><input class="note" type="text" maxlength="240" value="'+esc(item.note)+'" aria-label="Ghi chú key '+esc(item.code)+'"></td>'+
+          '<td><div class="row"><button data-action="copy">📋 Copy</button><button data-action="save">Lưu note</button>'+
+          '<button class="danger" data-action="revoke" data-revoked="'+(item.revokedAt?'1':'0')+'">'+(item.revokedAt?'Mở khóa':'Khóa key')+'</button></div></td></tr>';
+      }).join("");
+    }
+    async function load(){
+      listMessage.textContent="Đang tải danh sách...";
+      const loaded=[];let offset=0;let total=0;
+      do{
+        const data=await api("/api/admin/keys?offset="+offset);
+        loaded.push(...(data.licenses||[]));total=data.total||0;offset+=data.limit||20;
+        listMessage.textContent="Đang tải danh sách... "+Math.min(loaded.length,total)+"/"+total;
+      }while(offset<total);
+      licenses=loaded;
+      listMessage.className="message ok";listMessage.textContent="Đã tải "+licenses.length+" key.";
+      render();
+    }
+    function csvCell(value){return '"'+String(value??"").replace(/"/g,'""')+'"';}
+    function downloadCsv(){
+      const lines=[["code","plan","note","status","activated_at","expires_at"].map(csvCell).join(",")];
+      for(const item of licenses){
+        const status=statusFor(item)[0];
+        lines.push([item.code,item.plan,item.note,status,item.activatedAt?new Date(item.activatedAt).toISOString():"",item.expiresAt?new Date(item.expiresAt).toISOString():""].map(csvCell).join(","));
+      }
+      const blob=new Blob(["\uFEFF"+lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="LKB-Media-Music-keys.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    function parseCsvLine(line){
+      const cells=[];let value="";let quoted=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch==='"'&&quoted&&line[i+1]==='"'){value+='"';i++;}
+        else if(ch==='"'){quoted=!quoted;}
+        else if(ch===","&&!quoted){cells.push(value);value="";}
+        else{value+=ch;}
+      }
+      cells.push(value);return cells;
+    }
+    document.getElementById("loginForm").addEventListener("submit",async event=>{
+      event.preventDefault();loginMessage.textContent="Đang đăng nhập...";
+      try{
+        await api("/api/admin/auth",{method:"POST",body:JSON.stringify({username:document.getElementById("username").value,password:document.getElementById("password").value})});
+        loginView.hidden=true;dashboard.hidden=false;logoutButton.hidden=false;await load();
+      }catch(error){loginMessage.textContent=error.message;}
+    });
+    logoutButton.addEventListener("click",async()=>{
+      try{await api("/api/admin/auth",{method:"POST",body:JSON.stringify({action:"logout"})});}finally{location.reload();}
+    });
+    document.getElementById("createForm").addEventListener("submit",async event=>{
+      event.preventDefault();newKeyMessage.className="message";newKeyMessage.textContent="Đang tạo...";
+      try{
+        const data=await api("/api/admin/keys",{method:"POST",body:JSON.stringify({action:"create",plan:document.getElementById("newPlan").value,note:document.getElementById("newNote").value})});
+        newKeyMessage.className="message ok";newKeyMessage.textContent="Key mới: "+data.license.code+" — hãy lưu mã hoặc tải CSV ngay.";
+        document.getElementById("newNote").value="";await load();
+      }catch(error){newKeyMessage.textContent=error.message;}
+    });
+    document.getElementById("chooseImportButton").addEventListener("click",()=>document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change",async event=>{
+      const file=event.target.files&&event.target.files[0];if(!file)return;
+      importMessage.textContent="Đang đọc CSV...";
+      try{
+        const lines=(await file.text()).replace(/^\uFEFF/,"").split(/\r?\n/).filter(line=>line.trim());
+        const header=parseCsvLine(lines.shift()).map(cell=>cell.trim().toLowerCase());
+        const codeIndex=header.indexOf("code");const planIndex=header.indexOf("plan");const noteIndex=header.indexOf("note");
+        if(codeIndex<0||planIndex<0)throw new Error("CSV cần có cột code và plan.");
+        const batch=lines.map(line=>{const cells=parseCsvLine(line);return {code:cells[codeIndex],plan:cells[planIndex],note:noteIndex<0?"":cells[noteIndex]};});
+        let added=0,duplicates=0;
+        for(let i=0;i<batch.length;i+=10){
+          const result=await api("/api/admin/keys",{method:"POST",body:JSON.stringify({action:"import",licenses:batch.slice(i,i+10)})});
+          added+=result.added;duplicates+=result.duplicates;
+          importMessage.textContent="Đang nhập... "+Math.min(i+10,batch.length)+"/"+batch.length;
+        }
+        importMessage.className="message ok";importMessage.textContent="Đã nhập "+added+" key; bỏ qua "+duplicates+" mã đã có.";
+        await load();
+      }catch(error){importMessage.className="message";importMessage.textContent=error.message;}
+      finally{event.target.value="";}
+    });
+    rowsEl.addEventListener("click",async event=>{
+      const button=event.target.closest("button[data-action]");if(!button)return;
+      const row=button.closest("tr");const id=row.dataset.id;const item=licenses.find(value=>value.id===id);if(!item)return;
+      try{
+        if(button.dataset.action==="copy"){await navigator.clipboard.writeText(item.code);listMessage.className="message ok";listMessage.textContent="Đã copy "+item.code;}
+        if(button.dataset.action==="save"){
+          await api("/api/admin/keys",{method:"POST",body:JSON.stringify({action:"update",id,note:row.querySelector(".note").value,revoked:!!item.revokedAt})});
+          item.note=row.querySelector(".note").value;listMessage.className="message ok";listMessage.textContent="Đã lưu ghi chú.";render();
+        }
+        if(button.dataset.action==="revoke"){
+          const revoked=button.dataset.revoked!=="1";
+          if(revoked&&!confirm("Khóa key này ngay? Phiên đang dùng sẽ bị đăng xuất ở lần kiểm tra tiếp theo."))return;
+          await api("/api/admin/keys",{method:"POST",body:JSON.stringify({action:"update",id,note:row.querySelector(".note").value,revoked})});
+          await load();
+        }
+      }catch(error){listMessage.className="message";listMessage.textContent=error.message;}
+    });
+    document.getElementById("search").addEventListener("input",render);
+    document.getElementById("exportButton").addEventListener("click",downloadCsv);
+    document.getElementById("refreshButton").addEventListener("click",()=>load().catch(error=>listMessage.textContent=error.message));
+    api("/api/admin/auth").then(async()=>{loginView.hidden=true;dashboard.hidden=false;logoutButton.hidden=false;await load();}).catch(()=>{});
+  </script>
+</body>
+</html>

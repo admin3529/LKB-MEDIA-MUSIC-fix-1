@@ -1,0 +1,3201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playlist Mix Builder — Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b1020;
+    --surface: #111a2a;
+    --surface-2: #182438;
+    --border: #2a3a52;
+    --text: #e8efff;
+    --muted: #9aa9bf;
+    --accent: #68e6c2;
+    --accent-dim: #2c7969;
+    --amber: #ffca76;
+    --danger: #fb7185;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at 12% 0%, rgba(72,112,160,.13), transparent 38%),
+      radial-gradient(ellipse at 90% 8%, rgba(54,177,145,.09), transparent 32%), var(--bg);
+    color:var(--text);
+    font-family:'Sora',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 24px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#0F1317,#0B0E11);
+    gap:16px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .waveform{display:flex;align-items:flex-end;gap:3px;height:28px;}
+  .waveform span{
+    width:4px;background:var(--accent);border-radius:2px;
+    display:block;
+  }
+  .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:0.2px;}
+  .brand .tag{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .header-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .toggle{
+    display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;
+    padding:6px 12px;
+  }
+  .toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
+  button{
+    font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+    border-radius:8px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text);
+    padding:9px 14px;transition:background .15s,border-color .15s,opacity .15s;
+  }
+  button:hover:not(:disabled){border-color:#33404a;background:#1C222A;}
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+  button.primary{background:var(--accent);color:#08211B;border-color:var(--accent);}
+  button.primary:hover:not(:disabled){background:#63f0cf;}
+  button.danger{background:transparent;color:var(--danger);border-color:#4a2725;}
+  button.danger:hover:not(:disabled){background:#26140f;}
+  button.small{padding:5px 9px;font-size:12px;border-radius:6px;}
+  button.ghost{background:transparent;}
+  button.iconbtn{padding:5px 8px;font-size:13px;border-radius:6px;line-height:1;}
+  button.iconbtn.active{border-color:var(--accent);color:var(--accent);}
+
+  .toolbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:14px 24px;border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  .toolbar.wrap2{padding-top:0;padding-bottom:14px;}
+  .partition-tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;}
+  .partition-tabs button{border:none;background:transparent;padding:8px 16px;border-radius:7px;color:var(--muted);}
+  .partition-tabs button.active{background:var(--bg);color:var(--accent);}
+  .toolbar .sep{width:1px;height:24px;background:var(--border);margin:0 4px;}
+  .toolbar label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .toolbar input[type=number]{
+    width:56px;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);border-radius:6px;padding:7px 8px;font-family:'JetBrains Mono',monospace;
+  }
+  .toolbar input[type=number].wide{width:64px;}
+  .fx-group{
+    display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);
+    background:var(--surface-2);border:1px solid var(--border);border-radius:999px;
+    padding:6px 10px 6px 12px;
+  }
+  .fx-group input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+  .fx-group input[type=number]{width:52px;}
+
+  main{display:flex;gap:0;min-height:0;}
+  .panel{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .panel + .panel{border-left:1px solid var(--border);}
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:1px solid var(--border);
+  }
+  .panel-head h2{font-size:13px;margin:0;letter-spacing:.3px;color:var(--muted);font-weight:600;}
+  .panel-head .count{font-family:'JetBrains Mono',monospace;color:var(--text);font-size:12.5px;}
+
+  .pool-tools{display:flex;gap:8px;padding:10px 18px 0;flex-wrap:wrap;}
+  .pool-tools input[type=text]{
+    flex:1;min-width:140px;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;
+  }
+  .pool-tools select{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit;
+  }
+
+  .dropzone{
+    margin:14px 18px 0;padding:20px;border:1.5px dashed var(--border);
+    border-radius:var(--radius);text-align:center;color:var(--muted);font-size:13px;
+    transition:border-color .15s, background .15s;
+  }
+  .dropzone.drag{border-color:var(--accent);background:#0f1c19;color:var(--accent);}
+
+  .list{
+    flex:1;overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:6px;
+    min-height:220px;
+  }
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;}
+
+  .track{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:9px 11px;cursor:pointer;user-select:none;
+  }
+  .track:hover{border-color:#33404a;}
+  .track.selected{border-color:var(--accent);background:#0f1c19;}
+  .track.pinned{border-left:3px solid var(--amber);}
+  .track.playingnow{border-color:var(--accent);}
+  .track .idx{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;width:20px;flex-shrink:0;}
+  .track .name{flex:1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .track .name.nowplaying{color:var(--accent);}
+  .track .dur{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);flex-shrink:0;}
+  .track .actions{display:flex;gap:4px;flex-shrink:0;}
+  .track .pin-btn{background:none;border:none;padding:2px 4px;font-size:13px;color:var(--muted);}
+  .track .pin-btn.on{color:var(--amber);}
+
+  .pool-footer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;}
+  .playlist-footer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+
+  .export-tools{display:flex;gap:8px;padding:10px 18px 0;flex-wrap:wrap;align-items:center;}
+  .export-tools input[type=text]{
+    flex:1;min-width:180px;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;
+  }
+  .queue-list{padding:0 18px;display:flex;flex-direction:column;gap:6px;}
+  .queue-item{
+    display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:7px 10px;font-size:12.5px;
+  }
+  .queue-item .qname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .queue-item .qcount{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11.5px;}
+
+  #fileInput, #folderInput{display:none;}
+
+  .log-wrap{border-top:1px solid var(--border);background:var(--surface);}
+  .log-head{padding:10px 24px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+  #logBox{
+    margin:0 24px 16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;height:130px;overflow-y:auto;font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--muted);line-height:1.6;
+  }
+  #logBox div.err{color:var(--danger);}
+  #logBox div.ok{color:var(--accent);}
+
+  .footnote{padding:10px 24px 24px;color:var(--muted);font-size:12px;line-height:1.6;}
+  .footnote a{color:var(--accent);}
+
+  @media (max-width: 780px){
+    main{flex-direction:column;}
+    .panel + .panel{border-left:none;border-top:1px solid var(--border);}
+    header{padding:16px;}
+    .toolbar, .pool-footer, .playlist-footer{padding-left:16px;padding-right:16px;}
+    #logBox{margin-left:16px;margin-right:16px;}
+  }
+
+  button:focus-visible, input:focus-visible, select:focus-visible, .track:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
+  }
+
+  /* ===== Added: metadata / playlist management / export controls ===== */
+  .advanced-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 18px 0;}
+  .advanced-tools .field{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;}
+  .advanced-tools input,.advanced-tools select,.meta-grid input,.meta-grid select,.meta-grid textarea{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:7px;padding:8px 9px;font-family:inherit;font-size:12.5px;
+  }
+  .advanced-tools input[type=text]{min-width:150px;flex:1;}
+  .advanced-tools select{min-width:120px;}
+  .dedupe-box{display:flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;}
+  .dedupe-box strong{font-size:12px;color:var(--muted);}
+  .dedupe-box select{border:none;background:transparent;padding:0;color:var(--text);outline:none;}
+  .playlist-drop-active{border:1px dashed var(--accent)!important;background:#0f1c19!important;}
+  .track .meta-mini{color:var(--muted);font-size:10.5px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:10000;padding:18px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{width:min(720px,100%);max-height:min(88vh,820px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 80px rgba(0,0,0,.5);}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:15px;}
+  .modal-body{padding:16px 18px;}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .meta-grid .full{grid-column:1/-1;}
+  .meta-grid label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:11.5px;}
+  .meta-grid textarea{min-height:75px;resize:vertical;}
+  .cover-box{display:flex;align-items:center;gap:12px;padding:10px;border:1px dashed var(--border);border-radius:9px;margin-top:12px;}
+  .cover-preview{width:64px;height:64px;border-radius:8px;object-fit:cover;background:var(--bg);border:1px solid var(--border);display:none;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border);}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;}
+  @media(max-width:650px){.meta-grid{grid-template-columns:1fr}.meta-grid .full{grid-column:auto}.advanced-tools{padding-left:16px;padding-right:16px}}
+
+
+  .file-drop-active{outline:2px dashed var(--accent);outline-offset:-4px;background:rgba(255,255,255,.025);}
+
+  /* ===== Remix sub-pools ===== */
+  .remix-poolbar{display:none;align-items:center;gap:7px;padding:10px 18px 0;flex-wrap:wrap;}
+  .remix-poolbar.show{display:flex;}
+  .remix-poolbar select{flex:1;min-width:145px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;font-size:12.5px;}
+  .remix-poolbar button{white-space:nowrap;}
+  .subpool-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--accent);border:1px solid var(--accent-dim);background:#0d1916;padding:3px 6px;border-radius:999px;margin-right:5px;}
+
+  /* Refined, calmer visual system */
+  header{background:linear-gradient(135deg,rgba(20,31,50,.96),rgba(13,20,34,.96));box-shadow:0 8px 30px rgba(0,0,0,.16);}
+  .brand .tag{color:var(--muted);font-size:11px;margin-top:4px;letter-spacing:.15px;}
+  button{border-radius:10px;}
+  button.primary{background:linear-gradient(135deg,#78f0cf,#50d6b2);border-color:#68e6c2;box-shadow:0 5px 18px rgba(70,220,180,.14);}
+  button.primary:hover:not(:disabled){background:linear-gradient(135deg,#9af6db,#68e6c2);}
+  .toolbar{background:rgba(17,26,42,.9);backdrop-filter:blur(12px);}
+  .panel-head{background:rgba(255,255,255,.018);}
+  .track{border-radius:10px;transition:transform .14s,border-color .14s,background .14s,box-shadow .14s;}
+  .track:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.12);}
+  .track.selected{background:linear-gradient(100deg,rgba(104,230,194,.12),rgba(104,230,194,.035));}
+  .partition-tabs button.active{box-shadow:0 2px 10px rgba(0,0,0,.2);}
+  .playlist-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:10px 18px 0;}
+  .playlist-tools button{white-space:nowrap;}
+  #playlistCount{border:1px solid var(--border);border-radius:999px;padding:5px 8px;background:var(--surface-2);}
+  #playlistDuration{font-weight:600;color:var(--accent);padding:0 4px;}
+  body[data-theme="light"]{
+    --bg:#edf3f8;--surface:#ffffff;--surface-2:#e6edf5;--border:#d1dce8;
+    --text:#1d2a39;--muted:#63758a;--accent:#087c67;--accent-dim:#8fc9bb;
+    --amber:#a96a16;--danger:#c13e52;
+    background:radial-gradient(ellipse at 10% 0%,rgba(73,139,189,.14),transparent 38%),
+      radial-gradient(ellipse at 90% 8%,rgba(65,178,149,.12),transparent 32%),var(--bg);
+  }
+  body[data-theme="light"] header{background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(239,246,251,.96));box-shadow:0 8px 28px rgba(47,76,103,.08);}
+  body[data-theme="light"] .toolbar{background:rgba(255,255,255,.84);}
+  body[data-theme="light"] .track.selected{background:linear-gradient(100deg,rgba(8,124,103,.13),rgba(8,124,103,.035));}
+  body[data-theme="light"] .dropzone.drag,body[data-theme="light"] .playlist-drop-active{background:#e5f6f1!important;}
+  body[data-theme="light"] .subpool-badge{background:#e4f5f0;}
+  body[data-theme="light"] button:hover:not(:disabled){background:#e6edf5;}
+  body[data-theme="light"] button.primary:hover:not(:disabled){background:linear-gradient(135deg,#54dcb8,#21b994);}
+  @media(max-width:780px){.playlist-tools{padding-left:16px;padding-right:16px}.header-actions{gap:8px}}
+
+</style>
+</head>
+<body>
+
+
+
+<header>
+  <div class="brand">
+    <div class="waveform" aria-hidden="true">
+      <span style="height:10px"></span><span style="height:20px"></span><span style="height:14px"></span>
+      <span style="height:26px"></span><span style="height:8px"></span><span style="height:18px"></span>
+      <span style="height:12px"></span>
+    </div>
+    <div>
+      <h1>Playlist Mix Builder</h1>
+      <div class="tag">Xếp bài · nghe thử · ghép mix</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <label class="toggle theme-toggle" title="Đổi giao diện, lựa chọn sẽ được lưu"><input type="checkbox" id="themeToggle"> Sáng</label>
+    <label class="toggle"><input type="checkbox" id="cutSilence" checked> Tự cắt khoảng lặng</label>
+    <label class="toggle"><input type="checkbox" id="normalizeVolume" checked> Cân bằng âm lượng</label>
+    <label class="toggle"><input type="checkbox" id="eightD"> 8D</label>
+    <span id="eightDParams" style="display:none;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;">
+      Chu kỳ <input type="number" id="eightDPeriod" value="9" min="3" max="30" step="1" style="width:46px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 6px;font-family:'JetBrains Mono',monospace;">s
+      Cường độ <input type="range" id="eightDIntensity" min="0" max="100" value="100" style="width:70px;accent-color:var(--accent);">
+      <span id="eightDIntensityLabel" class="mono">100%</span>
+      Độ rộng <input type="range" id="eightDWidth" min="0" max="200" value="100" style="width:70px;accent-color:var(--accent);">
+      <span id="eightDWidthLabel" class="mono">100%</span>
+      Depth <input type="range" id="eightDDepth" min="0" max="100" value="0" style="width:70px;accent-color:var(--accent);">
+      <span id="eightDDepthLabel" class="mono">0%</span>
+      <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="eightDKeepBass" checked> Bass giữ giữa</label>
+      <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="eightDKeepVocal" checked> Vocal giữ giữa</label>
+      <label style="display:flex;align-items:center;gap:4px;" title="Giả lập ITD + suy hao tần số cao ở tai xa — không phải HRTF đo thật bằng đầu giả"><input type="checkbox" id="eightDBinaural"> Binaural giả lập</label>
+    </span>
+    <button id="chooseOutputBtn" class="ghost">📁 Thư mục xuất</button>
+    <span id="outputDirLabel" class="mono" style="font-size:11.5px;color:var(--muted);"></span>
+    <button id="mergeBtn" class="primary">🎚 GHÉP MIX</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="partition-tabs">
+    <button id="tabRemix" class="active">🎧 REMIX</button>
+    <button id="tabLofi">🌙 LOFI</button>
+  </div>
+  <div class="sep"></div>
+  <label>Số bài <input type="number" id="randomCount" value="10" min="1"></label>
+  <button id="randomBtn">🎲 RANDOM LIST</button>
+  <div class="sep"></div>
+  <button id="replaceBtn">🔄 Thay bài</button>
+</div>
+
+<div class="toolbar wrap2">
+  <div class="fx-group">
+    <label><input type="checkbox" id="fadeIn"> Fade In</label>
+    <input type="number" id="fadeInSec" value="3" min="0" step="0.5" title="Số giây fade in đầu mix"> s
+  </div>
+  <div class="fx-group">
+    <label><input type="checkbox" id="fadeOut"> Fade Out</label>
+    <input type="number" id="fadeOutSec" value="3" min="0" step="0.5" title="Số giây fade out cuối mix"> s
+  </div>
+  <div class="fx-group">
+    <label><input type="checkbox" id="crossfade" checked> Crossfade</label>
+    <input type="number" id="crossfadeSec" value="2.0" min="0" step="0.5" title="Số giây chồng lấn giữa 2 bài"> s
+  </div>
+  <div class="fx-group" title="Tăng nhẹ dải cao để tiếng nhạc rõ và có cảm giác thoáng hơn.">
+    <label><input type="checkbox" id="presenceEnhance" checked> ✨ Tăng cảm âm</label>
+    <input type="range" id="presenceIntensity" min="0" max="100" value="35" style="width:80px;accent-color:var(--accent);" title="Cường độ tăng cảm âm">
+    <span id="presenceIntensityLabel" class="mono">35%</span>
+  </div>
+  <div class="fx-group" title="Tìm và cắt nhẹ phần xì/ồn rất nhỏ ở đầu và cuối từng bài sau khi trim.">
+    <label><input type="checkbox" id="edgeNoiseCut" checked> ✂ Cắt xì đầu/cuối</label>
+  </div>
+</div>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>KHO NGUỒN</h2>
+      <span class="count mono" id="poolCount">0 bài</span>
+    </div>
+    <div class="pool-tools">
+      <input type="text" id="poolSearch" placeholder="🔍 Tìm bài...">
+      <select id="poolSort">
+        <option value="">Sắp xếp...</option>
+        <option value="az">Tên A → Z</option>
+        <option value="za">Tên Z → A</option>
+        <option value="dur_asc">Thời lượng ngắn → dài</option>
+        <option value="dur_desc">Thời lượng dài → ngắn</option>
+        <option value="new_old">Mới → cũ</option>
+        <option value="old_new">Cũ → mới</option>
+      </select>
+    </div>
+    <div class="remix-poolbar show" id="remixPoolBar">
+      <select id="remixPoolSelect" title="Chọn kho Remix con"></select>
+      <button id="addRemixPoolBtn" class="small">➕ Kho Remix</button>
+      <button id="renameRemixPoolBtn" class="small ghost">✏️ Đổi tên</button>
+      <button id="deleteRemixPoolBtn" class="small danger">🗑 Xóa kho</button>
+    </div>
+    <div class="dropzone" id="dropzone">
+      Kéo-thả file nhạc hoặc cả thư mục vào đây<br>
+      <span style="font-size:11.5px">mp3 · wav · m4a · flac · aac · ogg</span>
+    </div>
+    <div class="list" id="poolList"><div class="empty">Chưa có bài nào trong kho.</div></div>
+    <div class="pool-footer">
+      <button id="addFilesBtn">🎵 Thêm file</button>
+      <button id="addFolderBtn">📂 Thêm thư mục</button>
+      <button id="clearPoolBtn" class="danger">🗑 Xóa kho</button>
+    </div>
+    <input type="file" id="fileInput" multiple accept="audio/*">
+    <input type="file" id="folderInput" multiple webkitdirectory>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>PLAYLIST</h2>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="previewPlaylistBtn" class="small primary" title="Nghe trước toàn bộ playlist với các hiệu ứng đang chọn">▶ NGHE TRƯỚC LIST</button>
+        <button id="stopPlaylistPreviewBtn" class="small ghost" disabled title="Dừng nghe trước playlist">⏹ DỪNG</button>
+        <span class="count mono" id="playlistCount">0 bài</span>
+        <span class="count mono" id="playlistDuration">00:00</span>
+      </div>
+    </div>
+    <div id="playlistPreviewSeek" style="display:none;padding:8px 10px 4px;border-top:1px solid var(--border);background:rgba(255,255,255,.02);">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;">
+        <span id="playlistPreviewCurrent" class="mono" style="min-width:42px;text-align:right">00:00</span>
+        <input id="playlistPreviewRange" type="range" min="0" max="0" value="0" step="0.1" style="flex:1;cursor:pointer" disabled title="Kéo để chọn vị trí muốn nghe">
+        <span id="playlistPreviewTotal" class="mono" style="min-width:42px">00:00</span>
+      </div>
+      <div style="font-size:10px;opacity:.62;margin-top:3px;text-align:center">Kéo thanh để chọn đúng phút/giây muốn nghe</div>
+    </div>
+    <div class="playlist-tools" role="group" aria-label="Công cụ playlist">
+      <button id="shufflePlaylistBtn" class="small" title="Trộn thứ tự bài, vẫn giữ bài ghim ở đầu">🔀 Trộn thứ tự</button>
+      <button id="sortPlaylistBtn" class="small" title="Sắp xếp theo tên bài A đến Z">A → Z</button>
+      <button id="dedupePlaylistBtn" class="small" title="Gỡ các mục trùng cùng một file">🧹 Dọn bài lặp</button>
+      <button id="downloadTracklistBtn" class="small" title="Tải tracklist kèm mốc thời gian dự kiến">📄 Tải tracklist</button>
+      <button id="clearPlaylistBtn" class="small danger" title="Xóa playlist hiện tại">🗑 Xóa list</button>
+    </div>
+    <div class="list" id="playlistList"><div class="empty">Random hoặc thêm bài để tạo playlist.</div></div>
+    <div class="export-tools">
+      <input type="text" id="playlistNameInput" placeholder="Tên playlist / tên file xuất, vd: VINAHOUSE 2026 - MIX 01">
+      <button id="addQueueBtn" class="small ghost">➕ Thêm vào hàng đợi xuất</button>
+    </div>
+    <div class="advanced-tools">
+      <div class="field">Nghệ sĩ <input type="text" id="exportArtist" placeholder="Tên nghệ sĩ"></div>
+      <div class="field">Remix <input type="text" id="exportRemixer" placeholder="Tên người remix"></div>
+      <div class="field">Tên file <input type="text" id="exportFilePattern" placeholder="{playlist} - {artist}"></div>
+      <div class="dedupe-box">
+        <strong>CHỐNG TRÙNG</strong>
+        <select id="dedupeMode" title="Quy tắc bài đã dùng giữa các playlist">
+          <option value="strict">Strict — Không được trùng</option>
+          <option value="soft">Soft — Hạn chế trùng</option>
+          <option value="reset">Reset — Cho phép dùng lại</option>
+        </select>
+        <button id="resetDedupeBtn" class="small ghost" title="Xoá lịch sử sử dụng giữa các playlist">↻ Reset</button>
+      </div>
+    </div>
+    <div class="advanced-tools">
+      <div class="field">Định dạng
+        <select id="exportFormat">
+          <option value="mp3">MP3 — MPEG Audio</option>
+          <option value="wav">WAV — Lossless</option>
+          <option value="flac">FLAC — Lossless</option>
+          <option value="m4a">M4A — AAC</option>
+          <option value="ogg">OGG — Vorbis/Opus</option>
+        </select>
+      </div>
+      <div class="field">Bitrate
+        <select id="exportBitrate">
+          <option value="128">128 kbps</option>
+          <option value="192">192 kbps</option>
+          <option value="256">256 kbps</option>
+          <option value="320" selected>320 kbps</option>
+        </select>
+      </div>
+      <span class="hint" id="formatHint">WAV không nén; bitrate không áp dụng.</span>
+    </div>
+    <div class="queue-list" id="exportQueueBox"></div>
+    <div class="playlist-footer">
+      <button id="exportAllBtn" class="small">📦 Xuất tất cả hàng đợi</button>
+      <span style="font-size:12px;color:var(--muted)">Chọn 1 bài ở KHO NGUỒN + 1 vị trí ở đây rồi bấm "🔄 Thay bài", hoặc double-click 1 dòng playlist.</span>
+    </div>
+  </section>
+</main>
+
+<div class="log-wrap">
+  <div class="log-head"><span>NHẬT KÝ XỬ LÝ</span><span id="statusLabel">Sẵn sàng</span></div>
+  <div id="logBox"></div>
+</div>
+
+<div class="footnote">
+  Mỗi lần ghép mix sẽ xuất ra 4 file: <strong>&lt;tên playlist&gt;.mp3 / .wav</strong> (âm thanh), <strong>&lt;tên playlist&gt;_tracklist.txt</strong>
+  (danh sách chi tiết), <strong>&lt;tên playlist&gt;_youtube_timestamps.txt</strong> (dán thẳng vào mô tả video YouTube — tự động dùng
+  định dạng <code class="mono">00:00</code> nếu tổng dưới 1 tiếng, hoặc <code class="mono">00:00:00</code> nếu từ
+  1 tiếng trở lên), và <strong>&lt;tên playlist&gt;.srt</strong> (phụ đề tên bài hát theo đúng thời điểm, gắn vào video/app phát
+  nhạc để hiện tên bài đang phát). Nếu bạn không đặt tên playlist, file sẽ dùng tên mặc định <strong>merged_output</strong>.<br><br>
+  Lưu ý: MP3 được mã hoá bằng WebCodecs nếu trình duyệt hỗ trợ codec MP3; WAV được mã hoá trực tiếp dạng PCM 16-bit và có metadata cơ bản. OGG chỉ xuất được khi trình duyệt cung cấp OGG encoder qua MediaRecorder.
+  FLAC/M4A cần encoder chuyên dụng; app sẽ báo rõ thay vì đổi đuôi giả. Hiệu ứng 8D là hiệu ứng
+  xoay âm thanh trái-phải theo chu kỳ (autopan); "Bass/Vocal giữ giữa" giữ phần trầm và giọng hát ở giữa trong khi
+  treble di chuyển, "Độ rộng" chỉnh độ rộng stereo, "Depth" mô phỏng cảm giác gần/xa. "Binaural giả lập" chỉ là mô
+  phỏng đơn giản (lệch thời gian nhỏ giữa 2 tai + suy hao tần số cao ở tai xa) — đây <strong>không phải</strong> là
+  HRTF đo bằng đầu giả thật sự vì trình duyệt không hỗ trợ convolution HRTF chuẩn mà không có file impulse response.<br><br>
+  "Nghe trước list" tạo một bản preview tạm thời từ chính playlist hiện tại và áp dụng các thiết lập Cut, Cân bằng âm lượng, Crossfade, Tăng cảm âm, Fade và 8D đang bật; preview không tạo file xuất.<br><br>
+  "Tăng cảm âm" là một lớp presence/air nhẹ ở dải cao để tiếng nhạc rõ và thoáng hơn, có thể chỉnh cường độ. "Cắt xì đầu/cuối" chỉ dọn phần nhiễu rất nhỏ ở mép mỗi bài và vẫn giữ cú vào nhạc; sau đó hệ thống còn có declick ngắn để tránh tiếng bụp/click.<br><br>
+  Crossfade sẽ chồng lấn phần cuối bài trước với phần đầu bài sau theo số giây bạn đặt, dùng đường cong equal-power
+  để chuyển mượt; kết hợp với "Tự cắt khoảng lặng" để loại bỏ khoảng im lặng thừa ở đầu/cuối mỗi file trước khi ghép.
+  "Cân bằng âm lượng" tự động phân tích độ to (RMS) từng bài và chỉnh gain để không có bài nào bị nhỏ/to bất thường
+  so với các bài còn lại.<br><br>
+  App <strong>tự động lưu</strong> thư viện nhạc, tên file, metadata, Remix/Lofi, playlist, hàng đợi xuất và các thiết lập
+  ngay trong bộ nhớ của trình duyệt. Khi mở lại web, dữ liệu đã lưu sẽ được <strong>tự động khôi phục</strong> mà không cần
+  bấm nút Nạp/Lưu. Nếu trước đây đã liên kết thư mục dự án, data.js vẫn được cập nhật tự động ở chế độ nền.
+</div>
+
+
+<script>
+/* ===== Project data.js support ===== */
+(function(){
+  "use strict";
+  window.PMB_PROJECT_DATA = window.PMB_PROJECT_DATA || null;
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+
+
+  const state = {
+    partitions: { Remix: [], Lofi: [] },
+    remixPools: [{ id: "rp1", name: "Remix 1" }],
+    activeRemixPoolId: "rp1",
+    partitionPlaylist: { Remix: [], Lofi: [] },
+    activePartition: "Remix",
+    pinned: null,
+    selectedSourceId: null,
+    selectedPlaylistIndex: null,
+    dragIndex: null,
+    busy: false,
+    poolSearch: "",
+    exportQueue: [],
+    dedupeHistory: [],
+    editingTrackId: null,
+    exportSettings: {
+      format: "wav",
+      bitrate: 320,
+      artist: "",
+      remixer: "",
+      filePattern: "{playlist}"
+    }
+  };
+
+  let dirHandle = null;
+  let pendingDirHandle = null;
+  const AUDIO_EXT = [".mp3",".wav",".m4a",".flac",".aac",".ogg"];
+
+  // ---------- preview player ----------
+  const previewAudioEl = new Audio();
+  let previewUrl = null;
+  let previewTrackId = null;
+  let previewState = "stopped"; // playing | paused | stopped
+  let playlistPreviewMode = false;
+  let playlistPreviewGeneration = 0;
+  let playlistPreviewSeeking = false;
+
+  function stopPreview(){
+    try{ previewAudioEl.pause(); previewAudioEl.currentTime = 0; }catch(e){}
+    if (previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl = null; }
+    previewTrackId = null;
+    previewState = "stopped";
+    playlistPreviewMode = false;
+    const pp = $("previewPlaylistBtn");
+    const sp = $("stopPlaylistPreviewBtn");
+    if (pp) pp.textContent = "▶ NGHE TRƯỚC LIST";
+    if (sp) sp.disabled = true;
+    const seek=$("playlistPreviewSeek"), range=$("playlistPreviewRange");
+    if(seek) seek.style.display="none";
+    if(range){ range.disabled=true; range.value=0; range.max=0; }
+    if($("playlistPreviewCurrent")) $("playlistPreviewCurrent").textContent="00:00";
+    if($("playlistPreviewTotal")) $("playlistPreviewTotal").textContent="00:00";
+    renderPool();
+    renderPlaylist();
+  }
+
+  function togglePreview(track){
+    if (playlistPreviewMode){
+      playlistPreviewGeneration++;
+      playlistPreviewMode = false;
+    }
+    if (previewTrackId === track.id && previewState === "playing"){
+      previewAudioEl.pause();
+      previewState = "paused";
+      renderPool(); renderPlaylist();
+      return;
+    }
+    if (previewTrackId === track.id && previewState === "paused"){
+      previewAudioEl.play().catch(()=>{});
+      previewState = "playing";
+      renderPool(); renderPlaylist();
+      return;
+    }
+    if (previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl = null; }
+    try{
+      previewUrl = URL.createObjectURL(track.file);
+      previewAudioEl.src = previewUrl;
+      previewTrackId = track.id;
+      previewAudioEl.play().catch(()=>{});
+      previewState = "playing";
+    } catch(e){ log(`Không nghe thử được "${track.name}": ${e.message}`, "err"); }
+    renderPool(); renderPlaylist();
+  }
+
+  previewAudioEl.addEventListener("ended", () => {
+    previewState = "stopped";
+    previewTrackId = null;
+    renderPool(); renderPlaylist();
+  });
+
+  // ---------- persistence (settings in localStorage, folder handle in IndexedDB) ----------
+
+  const DB_NAME = "pmb-store", STORE = "kv";
+  function openDB(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbSet(key, val){
+    try{
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(val, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch(e){ /* IndexedDB unavailable, ignore */ }
+  }
+  async function idbGet(key){
+    try{
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    } catch(e){ return null; }
+  }
+
+  // ---------- persistent music library ----------
+  // Source audio files are stored locally in IndexedDB. Adding new files
+  // appends to the existing library; it never clears old files automatically.
+  let libraryReady = false;
+  let librarySaveTimer = null;
+
+  function serializeMusicPool(){
+    return {
+      Remix: state.partitions.Remix.map(t => ({
+        id: t.id, name: t.name, duration: t.duration ?? null, addedAt: t.addedAt || Date.now(),
+        metadata: t.metadata || {}, cover: t.cover || null, file: t.file, remixPoolId: t.remixPoolId || state.remixPools[0]?.id || "rp1"
+      })),
+      Lofi: state.partitions.Lofi.map(t => ({
+        id: t.id, name: t.name, duration: t.duration ?? null, addedAt: t.addedAt || Date.now(),
+        metadata: t.metadata || {}, cover: t.cover || null, file: t.file
+      })),
+      remixPools: state.remixPools || [],
+      projectState: {
+        partitionPlaylist: {
+          Remix: state.partitionPlaylist.Remix.map(t => t?.id).filter(Boolean),
+          Lofi: state.partitionPlaylist.Lofi.map(t => t?.id).filter(Boolean)
+        },
+        pinned: state.pinned,
+        selectedSourceId: state.selectedSourceId,
+        exportQueue: state.exportQueue || [],
+        dedupeHistory: state.dedupeHistory || [],
+        activePartition: state.activePartition,
+        activeRemixPoolId: state.activeRemixPoolId,
+        playlistName: $("playlistNameInput")?.value || "",
+        exportSettings: state.exportSettings || {}
+      }
+    };
+  }
+
+  async function saveMusicLibrary(){
+    if (!libraryReady) return;
+    try{
+      await idbSet("musicLibrary", serializeMusicPool());
+    } catch(e){
+      log("Không thể lưu thư viện nhạc: " + e.message, "err");
+    }
+  }
+
+  function scheduleMusicLibrarySave(){
+    if (!libraryReady) return;
+    clearTimeout(librarySaveTimer);
+    librarySaveTimer = setTimeout(() => saveMusicLibrary(), 250);
+  }
+
+  async function restoreMusicLibrary(){
+    try{
+      const saved = await idbGet("musicLibrary");
+      if (saved && typeof saved === "object"){
+        if (Array.isArray(saved.remixPools) && saved.remixPools.length){
+          state.remixPools = saved.remixPools.filter(p=>p&&p.id).map(p=>({id:p.id,name:p.name||"Remix"}));
+        } else {
+          state.remixPools = [{id:"rp1",name:"Remix 1"}];
+        }
+        for (const partition of ["Remix", "Lofi"]){
+          const list = Array.isArray(saved[partition]) ? saved[partition] : [];
+          state.partitions[partition] = list.filter(t => t && t.file instanceof Blob).map(t => ({
+            id: t.id || uid(),
+            file: t.file,
+            name: t.name || t.file.name || "Không tên",
+            duration: typeof t.duration === "number" ? t.duration : null,
+            addedAt: t.addedAt || Date.now(),
+            metadata: t.metadata || {},
+            cover: t.cover instanceof Blob ? t.cover : null,
+            remixPoolId: partition === "Remix" ? (t.remixPoolId || state.remixPools[0]?.id || "rp1") : undefined
+          }));
+        }
+        const ps = saved.projectState || {};
+        const byId = new Map([
+          ...state.partitions.Remix,
+          ...state.partitions.Lofi
+        ].map(t => [t.id, t]));
+        if (ps.partitionPlaylist){
+          for (const p of ["Remix", "Lofi"]){
+            const ids = Array.isArray(ps.partitionPlaylist[p]) ? ps.partitionPlaylist[p] : [];
+            state.partitionPlaylist[p] = ids.map(id => byId.get(id)).filter(Boolean);
+          }
+        }
+        if ("pinned" in ps) state.pinned = ps.pinned;
+        if ("selectedSourceId" in ps) state.selectedSourceId = ps.selectedSourceId;
+        if (Array.isArray(ps.exportQueue)){
+          // Re-link queued track references to the restored File objects.
+          state.exportQueue = ps.exportQueue.map(q => ({
+            ...q,
+            tracks: Array.isArray(q.tracks) ? q.tracks.map(t => byId.get(t?.id) || t).filter(Boolean) : []
+          }));
+        }
+        if (Array.isArray(ps.dedupeHistory)) state.dedupeHistory = ps.dedupeHistory;
+        if (ps.activePartition === "Remix" || ps.activePartition === "Lofi") state.activePartition = ps.activePartition;
+        if (ps.activeRemixPoolId) state.activeRemixPoolId = ps.activeRemixPoolId;
+        if (ps.exportSettings && typeof ps.exportSettings === "object") Object.assign(state.exportSettings, ps.exportSettings);
+        if (typeof ps.playlistName === "string" && $("playlistNameInput")) $("playlistNameInput").value = ps.playlistName;
+        log(`Đã khôi phục ${state.partitions.Remix.length + state.partitions.Lofi.length} file và cài đặt/playlist đã lưu.`, "ok");
+        state.partitions.Remix.forEach(loadDuration);
+        state.partitions.Lofi.forEach(loadDuration);
+      }
+    } catch(e){
+      log("Không thể khôi phục thư viện nhạc: " + e.message, "err");
+    } finally {
+      libraryReady = true;
+      renderRemixPools();
+      renderPool();
+      renderPlaylist();
+    }
+  }
+
+  function saveSettings(){
+    try{
+      localStorage.setItem("pmb-settings", JSON.stringify({
+        cutSilence: $("cutSilence").checked,
+        normalizeVolume: $("normalizeVolume").checked,
+        eightD: $("eightD").checked,
+        eightDPeriod: $("eightDPeriod").value,
+        eightDIntensity: $("eightDIntensity").value,
+        eightDWidth: $("eightDWidth").value,
+        eightDDepth: $("eightDDepth").value,
+        eightDKeepBass: $("eightDKeepBass").checked,
+        eightDKeepVocal: $("eightDKeepVocal").checked,
+        eightDBinaural: $("eightDBinaural").checked,
+        fadeIn: $("fadeIn").checked,
+        fadeInSec: $("fadeInSec").value,
+        fadeOut: $("fadeOut").checked,
+        fadeOutSec: $("fadeOutSec").value,
+        crossfade: $("crossfade").checked,
+        crossfadeSec: $("crossfadeSec").value,
+        presenceEnhance: $("presenceEnhance").checked,
+        presenceIntensity: $("presenceIntensity").value,
+        edgeNoiseCut: $("edgeNoiseCut").checked,
+        randomCount: $("randomCount").value,
+        activePartition: state.activePartition
+      }));
+    } catch(e){ /* ignore */ }
+    try { scheduleMusicLibrarySave(); } catch(e) {}
+  }
+
+  function restoreSettings(){
+    try{
+      const raw = localStorage.getItem("pmb-settings");
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (typeof s.cutSilence === "boolean") $("cutSilence").checked = s.cutSilence;
+      if (typeof s.normalizeVolume === "boolean") $("normalizeVolume").checked = s.normalizeVolume;
+      if (typeof s.eightD === "boolean"){
+        $("eightD").checked = s.eightD;
+        $("eightDParams").style.display = s.eightD ? "inline-flex" : "none";
+      }
+      if (s.eightDPeriod) $("eightDPeriod").value = s.eightDPeriod;
+      if (s.eightDIntensity){
+        $("eightDIntensity").value = s.eightDIntensity;
+        $("eightDIntensityLabel").textContent = s.eightDIntensity + "%";
+      }
+      if (s.eightDWidth){
+        $("eightDWidth").value = s.eightDWidth;
+        $("eightDWidthLabel").textContent = s.eightDWidth + "%";
+      }
+      if (s.eightDDepth){
+        $("eightDDepth").value = s.eightDDepth;
+        $("eightDDepthLabel").textContent = s.eightDDepth + "%";
+      }
+      if (typeof s.eightDKeepBass === "boolean") $("eightDKeepBass").checked = s.eightDKeepBass;
+      if (typeof s.eightDKeepVocal === "boolean") $("eightDKeepVocal").checked = s.eightDKeepVocal;
+      if (typeof s.eightDBinaural === "boolean") $("eightDBinaural").checked = s.eightDBinaural;
+      if (typeof s.fadeIn === "boolean") $("fadeIn").checked = s.fadeIn;
+      if (s.fadeInSec) $("fadeInSec").value = s.fadeInSec;
+      if (typeof s.fadeOut === "boolean") $("fadeOut").checked = s.fadeOut;
+      if (s.fadeOutSec) $("fadeOutSec").value = s.fadeOutSec;
+      if (typeof s.crossfade === "boolean") $("crossfade").checked = s.crossfade;
+      if (s.crossfadeSec) $("crossfadeSec").value = s.crossfadeSec;
+      if (typeof s.presenceEnhance === "boolean") $("presenceEnhance").checked = s.presenceEnhance;
+      if (s.presenceIntensity != null){
+        $("presenceIntensity").value = s.presenceIntensity;
+        $("presenceIntensityLabel").textContent = s.presenceIntensity + "%";
+      }
+      if (typeof s.edgeNoiseCut === "boolean") $("edgeNoiseCut").checked = s.edgeNoiseCut;
+      if (s.randomCount) $("randomCount").value = s.randomCount;
+      if (s.activePartition) setPartition(s.activePartition);
+    } catch(e){ /* ignore */ }
+  }
+
+  function updateOutputDirLabel(name){
+    $("outputDirLabel").textContent = name ? `→ ${name}` : "";
+  }
+
+  async function restoreOutputDir(){
+    const handle = await idbGet("outputDir");
+    if (!handle) return;
+    try{
+      const perm = await handle.queryPermission({ mode: "readwrite" });
+      if (perm === "granted"){
+        dirHandle = handle;
+        updateOutputDirLabel(handle.name);
+        log(`Đã tự động dùng lại thư mục xuất đã lưu: ${handle.name}`, "ok");
+      } else {
+        pendingDirHandle = handle;
+        $("chooseOutputBtn").textContent = "🔁 Dùng lại thư mục đã lưu";
+        updateOutputDirLabel(handle.name + " (cần xác nhận)");
+        log(`Đã tìm thấy thư mục xuất đã lưu trước đó: "${handle.name}". Bấm nút "🔁 Dùng lại thư mục đã lưu" để xác nhận quyền truy cập.`);
+      }
+    } catch(e){ /* handle stale/unsupported, ignore */ }
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const poolListEl = $("poolList");
+  const playlistListEl = $("playlistList");
+  const poolCountEl = $("poolCount");
+  const playlistDurationEl = $("playlistDuration");
+  const logBox = $("logBox");
+  const statusLabel = $("statusLabel");
+  const exportQueueBox = $("exportQueueBox");
+
+  function applyTheme(theme){
+    const isLight = theme === "light";
+    document.body.dataset.theme = isLight ? "light" : "dark";
+    $("themeToggle").checked = isLight;
+    try{ localStorage.setItem("pmb-theme", isLight ? "light" : "dark"); }catch(e){}
+  }
+  try{ applyTheme(localStorage.getItem("pmb-theme") || "dark"); }catch(e){ applyTheme("dark"); }
+
+  function log(msg, kind){
+    const line = document.createElement("div");
+    if (kind) line.className = kind;
+    const t = new Date().toLocaleTimeString("vi-VN", {hour12:false});
+    line.textContent = `[${t}] ${msg}`;
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function formatTime(sec){
+    if (sec == null || isNaN(sec)) return "--:--";
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec%60;
+    if (h > 0){
+      return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    }
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function uid(){
+    return "t" + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  }
+
+  function normalizeVN(str){
+    try{
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    } catch(e){ return str.toLowerCase(); }
+  }
+
+  function setBusy(b){
+    state.busy = b;
+    $("mergeBtn").disabled = b;
+    $("randomBtn").disabled = b;
+    $("replaceBtn").disabled = b;
+    $("addFilesBtn").disabled = b;
+    $("addFolderBtn").disabled = b;
+    $("clearPoolBtn").disabled = b;
+    $("exportAllBtn").disabled = b;
+    $("addQueueBtn").disabled = b;
+    statusLabel.textContent = b ? "Đang xử lý..." : "Sẵn sàng";
+  }
+
+  // ---------- Remix sub-pools ----------
+  function activeRemixPool(){
+    if (state.activePartition !== "Remix") return null;
+    let p = state.remixPools.find(x => x.id === state.activeRemixPoolId);
+    if (!p){
+      p = state.remixPools[0] || {id:"rp1",name:"Remix 1"};
+      if (!state.remixPools.length) state.remixPools.push(p);
+      state.activeRemixPoolId = p.id;
+    }
+    return p;
+  }
+
+  function activeSourcePool(){
+    if (state.activePartition === "Remix"){
+      const rp = activeRemixPool();
+      return state.partitions.Remix.filter(t => (t.remixPoolId || "rp1") === rp.id);
+    }
+    return state.partitions[state.activePartition];
+  }
+
+  function renderRemixPools(){
+    const bar = $("remixPoolBar"), sel = $("remixPoolSelect");
+    if (!bar || !sel) return;
+    const show = state.activePartition === "Remix";
+    bar.classList.toggle("show", show);
+    if (!show) return;
+    if (!state.remixPools.length) state.remixPools.push({id:uid(),name:"Remix 1"});
+    if (!state.remixPools.some(p=>p.id===state.activeRemixPoolId)) state.activeRemixPoolId=state.remixPools[0].id;
+    sel.innerHTML = state.remixPools.map(p=>{
+      const count=state.partitions.Remix.filter(t=>(t.remixPoolId||"rp1")===p.id).length;
+      return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} — ${count} bài</option>`;
+    }).join("");
+    sel.value=state.activeRemixPoolId;
+  }
+
+  function addRemixPool(){
+    const name=(prompt("Tên kho Remix mới:", `Remix ${state.remixPools.length+1}`)||"").trim();
+    if(!name) return;
+    const p={id:uid(),name};
+    state.remixPools.push(p);
+    state.activeRemixPoolId=p.id;
+    renderRemixPools(); renderPool();
+    scheduleMusicLibrarySave();
+    log(`Đã tạo kho "${name}".`,"ok");
+  }
+
+  function renameRemixPool(){
+    const p=activeRemixPool(); if(!p) return;
+    const name=(prompt("Tên kho mới:",p.name)||"").trim();
+    if(!name || name===p.name) return;
+    p.name=name; renderRemixPools(); renderPool(); scheduleMusicLibrarySave();
+  }
+
+  function deleteRemixPool(){
+    if(state.remixPools.length<=1){ log("Phải giữ ít nhất 1 kho Remix.","err"); return; }
+    const p=activeRemixPool(); if(!p) return;
+    const count=state.partitions.Remix.filter(t=>(t.remixPoolId||"rp1")===p.id).length;
+    if(!confirm(`Xóa kho "${p.name}" và ${count} bài trong kho này?`)) return;
+    state.partitions.Remix=state.partitions.Remix.filter(t=>(t.remixPoolId||"rp1")!==p.id);
+    state.partitionPlaylist.Remix=state.partitionPlaylist.Remix.filter(t=>t.remixPoolId!==p.id);
+    state.remixPools=state.remixPools.filter(x=>x.id!==p.id);
+    state.activeRemixPoolId=state.remixPools[0].id;
+    state.selectedSourceId=null; renderRemixPools(); renderPool(); renderPlaylist(); scheduleMusicLibrarySave();
+  }
+
+  // ---------- adding tracks ----------
+
+  function isAudioFile(file){
+    const name = file.name.toLowerCase();
+    return AUDIO_EXT.some(ext => name.endsWith(ext));
+  }
+
+  function addFilesToPool(fileList){
+    const partition = state.activePartition;
+    const pool = state.partitions[partition];
+    const sourcePool = activeSourcePool();
+    const existingNames = new Set(sourcePool.map(t => t.name + "|" + t.file.size));
+    let added = 0;
+    for (const file of fileList){
+      if (!isAudioFile(file)) continue;
+      const key = file.name + "|" + file.size;
+      if (existingNames.has(key)) continue;
+      existingNames.add(key);
+      const track = {
+        id: uid(), file, name: file.name, duration: null, addedAt: Date.now(),
+        metadata: { title: stripExt(file.name), artist: "", album: "", genre: "", year: "", comment: "", trackNumber: "" },
+        cover: null,
+        ...(partition === "Remix" ? {remixPoolId: activeRemixPool().id} : {})
+      };
+      pool.push(track);
+      loadDuration(track);
+      added++;
+    }
+    if (added > 0){
+      log(`Đã thêm ${added} bài vào kho ${partition}.`);
+
+    } else log("Không có file âm thanh hợp lệ nào được thêm.");
+    renderPool();
+    // Persist newly imported audio immediately so it survives closing/reopening the app.
+    scheduleMusicLibrarySave();
+  }
+
+  function loadDuration(track){
+    try{
+      const url = URL.createObjectURL(track.file);
+      const audio = document.createElement("audio");
+      audio.preload = "metadata";
+      audio.src = url;
+      audio.addEventListener("loadedmetadata", () => {
+        track.duration = audio.duration;
+        URL.revokeObjectURL(url);
+        renderPool();
+        renderPlaylist();
+      });
+      audio.addEventListener("error", () => { URL.revokeObjectURL(url); });
+    } catch(e){ /* ignore */ }
+  }
+
+  async function traverseEntry(entry, files){
+    return new Promise((resolve) => {
+      if (entry.isFile){
+        entry.file((f) => { files.push(f); resolve(); }, () => resolve());
+      } else if (entry.isDirectory){
+        const reader = entry.createReader();
+        const readBatch = () => {
+          reader.readEntries(async (entries) => {
+            if (!entries.length){ resolve(); return; }
+            for (const e of entries) await traverseEntry(e, files);
+            readBatch();
+          }, () => resolve());
+        };
+        readBatch();
+      } else resolve();
+    });
+  }
+
+  async function filesFromDrop(dataTransfer){
+    const files = [];
+    const items = dataTransfer.items;
+    if (items && items.length && items[0].webkitGetAsEntry){
+      const entries = [];
+      for (let i=0;i<items.length;i++){
+        const entry = items[i].webkitGetAsEntry();
+        if (entry) entries.push(entry);
+      }
+      for (const entry of entries) await traverseEntry(entry, files);
+    } else {
+      for (const f of dataTransfer.files) files.push(f);
+    }
+    return files;
+  }
+
+  // ---------- search & sort ----------
+
+  function getVisiblePool(){
+    const partition = state.activePartition;
+    const pool = activeSourcePool();
+    const q = normalizeVN(state.poolSearch || "");
+    if (!q) return pool;
+    return pool.filter(t => normalizeVN(t.name).includes(q));
+  }
+
+  function sortPool(key){
+    if (!key) return;
+    const partition = state.activePartition;
+    const pool = activeSourcePool();
+    const collator = new Intl.Collator("vi", { sensitivity: "base" });
+    switch(key){
+      case "az": pool.sort((a,b) => collator.compare(a.name, b.name)); break;
+      case "za": pool.sort((a,b) => collator.compare(b.name, a.name)); break;
+      case "dur_asc": pool.sort((a,b) => (a.duration||0) - (b.duration||0)); break;
+      case "dur_desc": pool.sort((a,b) => (b.duration||0) - (a.duration||0)); break;
+      case "new_old": pool.sort((a,b) => (b.file.lastModified||b.addedAt||0) - (a.file.lastModified||a.addedAt||0)); break;
+      case "old_new": pool.sort((a,b) => (a.file.lastModified||a.addedAt||0) - (b.file.lastModified||b.addedAt||0)); break;
+    }
+    renderPool();
+  }
+
+  // ---------- rendering ----------
+
+  function renderPool(){
+    const partition = state.activePartition;
+    const pool = activeSourcePool();
+    const visible = getVisiblePool();
+    poolCountEl.textContent = state.poolSearch ? `${visible.length}/${pool.length} bài` : `${pool.length} bài`;
+    poolListEl.innerHTML = "";
+    if (!pool.length){
+      poolListEl.innerHTML = `<div class="empty">Chưa có bài nào trong kho.</div>`;
+      return;
+    }
+    if (!visible.length){
+      poolListEl.innerHTML = `<div class="empty">Không tìm thấy bài nào khớp "${escapeHtml(state.poolSearch)}".</div>`;
+      return;
+    }
+    visible.forEach((track) => {
+      const isPlaying = previewTrackId === track.id && previewState === "playing";
+      const isPaused = previewTrackId === track.id && previewState === "paused";
+      const div = document.createElement("div");
+      div.className = "track"
+        + (track.id === state.selectedSourceId ? " selected" : "")
+        + (track.id === state.pinned ? " pinned" : "")
+        + (isPlaying ? " playingnow" : "");
+      div.tabIndex = 0;
+      div.draggable = true;
+      const meta = track.metadata || {};
+      const metaLabel = [meta.artist, meta.title].filter(Boolean).join(" — ");
+      const rp = partition === "Remix" ? activeRemixPool() : null;
+      const poolBadge = rp ? `<span class="subpool-badge">${escapeHtml(rp.name)}</span>` : "";
+
+      div.innerHTML = `
+        <span class="name ${isPlaying?"nowplaying":""}" title="${escapeHtml(metaLabel || track.name)}">${poolBadge}${escapeHtml(meta.title || track.name)}</span>
+        <span class="meta-mini" title="${escapeHtml(metaLabel)}">${escapeHtml(metaLabel)}</span>
+        <span class="dur mono">${formatTime(track.duration)}</span>
+        <span class="actions">
+          <button class="iconbtn small ${isPlaying?"active":""}" data-action="preview" data-id="${track.id}" title="Nghe thử">${isPlaying ? "⏸" : "▶"}</button>
+          <button class="iconbtn small" data-action="stopPreview" data-id="${track.id}" title="Dừng" ${(!isPlaying && !isPaused)?"disabled":""}>⏹</button>
+          <button class="pin-btn small ${track.id === state.pinned ? "on" : ""}" data-action="pin" data-id="${track.id}" title="Ghim bài này làm bài đầu">📌</button>
+          <button class="small ghost" data-action="addPlaylist" data-id="${track.id}" title="Thêm trực tiếp vào playlist">➕</button>
+          <button class="small ghost" data-action="rename" data-id="${track.id}" title="Đổi tên bài">✏️</button>
+          <button class="small ghost" data-action="metadata" data-id="${track.id}" title="Chỉnh metadata">⚙</button>
+          <button class="small danger" data-action="remove" data-id="${track.id}" title="Xoá bài này khỏi kho">×</button>
+        </span>
+      `;
+      div.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        state.selectedSourceId = (state.selectedSourceId === track.id) ? null : track.id;
+        renderPool();
+      });
+      poolListEl.appendChild(div);
+    });
+  }
+
+  function currentPlaylist(){
+    return state.partitionPlaylist[state.activePartition];
+  }
+
+  function renderPlaylist(){
+    const list = currentPlaylist();
+    const total = list.reduce((s,t) => s + (t.duration || 0), 0);
+    playlistDurationEl.textContent = formatTime(total);
+    $("playlistCount").textContent = list.length + " bài";
+    playlistListEl.innerHTML = "";
+    if (!list.length){
+      playlistListEl.innerHTML = `<div class="empty">Random hoặc thêm bài để tạo playlist.</div>`;
+      return;
+    }
+    list.forEach((track, i) => {
+      const isPinned = state.pinned && track.id === state.pinned && i === 0;
+      const isPlaying = previewTrackId === track.id && previewState === "playing";
+      const isPaused = previewTrackId === track.id && previewState === "paused";
+      const div = document.createElement("div");
+      div.className = "track"
+        + (i === state.selectedPlaylistIndex ? " selected" : "")
+        + (isPinned ? " pinned" : "")
+        + (isPlaying ? " playingnow" : "");
+      div.draggable = !isPinned;
+      div.dataset.index = i;
+      div.innerHTML = `
+        <span class="idx mono">${i+1}</span>
+        <span class="name ${isPlaying?"nowplaying":""}" title="${escapeHtml((track.metadata?.artist ? track.metadata.artist+" — " : "") + (track.metadata?.title || track.name))}">${isPinned ? "📌 " : ""}${escapeHtml(track.metadata?.title || track.name)}</span>
+        <span class="dur mono">${formatTime(track.duration)}</span>
+        <span class="actions">
+          <button class="iconbtn small ${isPlaying?"active":""}" data-action="preview" data-id="${track.id}" title="Nghe thử">${isPlaying ? "⏸" : "▶"}</button>
+          <button class="iconbtn small" data-action="stopPreview" data-id="${track.id}" title="Dừng" ${(!isPlaying && !isPaused)?"disabled":""}>⏹</button>
+          <button class="small ghost" data-action="up" data-i="${i}" ${i===0||isPinned?"disabled":""}>↑</button>
+          <button class="small ghost" data-action="down" data-i="${i}" ${i===list.length-1?"disabled":""}>↓</button>
+          <button class="small danger" data-action="remove" data-i="${i}" ${isPinned?"disabled":""}>×</button>
+        </span>
+      `;
+      div.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        state.selectedPlaylistIndex = (state.selectedPlaylistIndex === i) ? null : i;
+        renderPlaylist();
+      });
+      div.addEventListener("dblclick", (e) => {
+        if (e.target.closest("button")) return;
+        doReplace(i);
+      });
+      div.addEventListener("dragstart", () => { state.dragIndex = i; });
+      div.addEventListener("dragover", (e) => e.preventDefault());
+      div.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const from = state.dragIndex;
+        const to = i;
+        if (from == null || from === to) return;
+        reorder(from, to);
+      });
+      playlistListEl.appendChild(div);
+    });
+  }
+
+  function renderExportQueue(){
+    exportQueueBox.innerHTML = "";
+    if (!state.exportQueue.length) return;
+    state.exportQueue.forEach((item, i) => {
+      const div = document.createElement("div");
+      div.className = "queue-item";
+      div.innerHTML = `
+        <span class="qname" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+        <span class="qcount mono">${item.tracks.length} bài</span>
+        <button class="small danger" data-action="qremove" data-i="${i}">×</button>
+      `;
+      exportQueueBox.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ---------- metadata / direct add / cross-playlist dedupe ----------
+
+  function trackTitle(track){
+    return track?.metadata?.title || stripExt(track?.name || "Không tên");
+  }
+
+  function usedTrackIds(excludeCurrent=true){
+    const used = new Set(state.dedupeHistory || []);
+    for (const item of state.exportQueue || []){
+      for (const t of item.tracks || []) if (t?.id) used.add(t.id);
+    }
+    if (excludeCurrent){
+      // The currently edited playlist is not considered a "previous playlist".
+    }
+    return used;
+  }
+
+  function canAddTrackToPlaylist(track, opts={}){
+    const list = currentPlaylist();
+    if (!track) return false;
+    if (list.some(t => t.id === track.id)){
+      log(`"${trackTitle(track)}" đã có trong playlist hiện tại.`, "err");
+      return false;
+    }
+    const mode = $("dedupeMode")?.value || "strict";
+    if (mode === "strict"){
+      const used = usedTrackIds();
+      if (used.has(track.id)){
+        log(`Strict: "${trackTitle(track)}" đã được dùng ở playlist khác. Không thể thêm.`, "err");
+        return false;
+      }
+    } else if (mode === "soft"){
+      const used = usedTrackIds();
+      if (used.has(track.id) && !opts.silent){
+        log(`Soft: "${trackTitle(track)}" đã từng được dùng ở playlist khác — vẫn cho phép thêm.`, "err");
+      }
+    }
+    return true;
+  }
+
+  function addTrackToPlaylist(track){
+    if (!canAddTrackToPlaylist(track)) return false;
+    currentPlaylist().push(track);
+    state.selectedPlaylistIndex = currentPlaylist().length - 1;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+    log(`➕ Đã thêm "${trackTitle(track)}" vào playlist ${state.activePartition}.`, "ok");
+    return true;
+  }
+
+  function resetDedupeHistory(){
+    state.dedupeHistory = [];
+    // Reset means the next playlist can reuse the entire pool; it does not erase existing playlists.
+    renderPool();
+    log("Đã Reset lịch sử chống trùng. Các bài có thể được dùng lại.", "ok");
+    scheduleMusicLibrarySave();
+  }
+
+  function getRandomCandidates(pool, n){
+    const mode = $("dedupeMode")?.value || "strict";
+    const current = currentPlaylist();
+    const currentIds = new Set(current.map(t => t.id));
+    const used = usedTrackIds();
+    let candidates = pool.filter(t => !currentIds.has(t.id));
+    if (mode === "strict") candidates = candidates.filter(t => !used.has(t.id));
+    if (mode === "soft"){
+      candidates.sort((a,b) => Number(used.has(a.id)) - Number(used.has(b.id)));
+    }
+    for (let i=candidates.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [candidates[i],candidates[j]]=[candidates[j],candidates[i]];
+    }
+    return candidates.slice(0,n);
+  }
+
+  function renameTrack(trackId){
+    const partition = state.activePartition;
+    const track = state.partitions[partition].find(t => t.id === trackId);
+    if (!track) return;
+    const current = track.metadata?.title || stripExt(track.name || "");
+    const next = prompt("Tên bài mới:", current);
+    if (next === null) return;
+    const title = next.trim();
+    if (!title){ log("Tên bài không được để trống.", "err"); return; }
+    track.name = title + (track.file?.name?.match(/\.[^.]+$/)?.[0] || "");
+    track.metadata = {...(track.metadata || {}), title};
+    scheduleMusicLibrarySave();
+    renderPool(); renderPlaylist();
+    log(`Đã đổi tên bài thành "${title}".`, "ok");
+  }
+
+  function openMetadataEditor(trackId){
+    const partition = state.activePartition;
+    const track = state.partitions[partition].find(t => t.id === trackId);
+    if (!track) return;
+    state.editingTrackId = trackId;
+    const m = track.metadata || {};
+    $("metaTitle").value = m.title ?? stripExt(track.name);
+    $("metaArtist").value = m.artist ?? "";
+    $("metaAlbum").value = m.album ?? "";
+    $("metaGenre").value = m.genre ?? "";
+    $("metaYear").value = m.year ?? "";
+    $("metaComment").value = m.comment ?? "";
+    $("metaTrackNumber").value = m.trackNumber ?? "";
+    const img = $("metaCoverPreview");
+    if (track.cover instanceof Blob){
+      img.src = URL.createObjectURL(track.cover);
+      img.style.display = "block";
+    } else {
+      img.removeAttribute("src"); img.style.display = "none";
+    }
+    const modal = $("metadataModal");
+    if (!modal) return;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+    $("metaTitle")?.focus();
+  }
+
+  function closeMetadataEditor(){
+    const img=$("metaCoverPreview");
+    if (img?.src?.startsWith("blob:")) URL.revokeObjectURL(img.src);
+    $("metadataModal").classList.remove("open");
+    $("metadataModal").setAttribute("aria-hidden","true");
+    state.editingTrackId=null;
+  }
+
+  async function saveMetadataEditor(){
+    const id=state.editingTrackId;
+    if (!id) return;
+    const track=state.partitions[state.activePartition].find(t=>t.id===id);
+    if (!track) return;
+    track.metadata = {
+      title: $("metaTitle").value.trim() || stripExt(track.name),
+      artist: $("metaArtist").value.trim(),
+      album: $("metaAlbum").value.trim(),
+      genre: $("metaGenre").value.trim(),
+      year: $("metaYear").value.trim(),
+      comment: $("metaComment").value.trim(),
+      trackNumber: $("metaTrackNumber").value.trim()
+    };
+    const coverInput=$("metaCover");
+    if (coverInput.files?.[0]) track.cover=coverInput.files[0];
+    scheduleMusicLibrarySave();
+    renderPool(); renderPlaylist();
+    log(`Đã lưu metadata cho "${trackTitle(track)}".`, "ok");
+    closeMetadataEditor();
+    coverInput.value="";
+  }
+
+  // ---------- playlist actions ----------
+
+  function pinnedLocksSlotZero(){
+    const list = currentPlaylist();
+    return !!(state.pinned && list[0] && list[0].id === state.pinned);
+  }
+
+  function reorder(from, to){
+    const list = currentPlaylist();
+    if (pinnedLocksSlotZero() && (from === 0 || to === 0)) return;
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
+    state.selectedPlaylistIndex = to;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+  }
+
+  function moveItem(i, dir){
+    const list = currentPlaylist();
+    const ni = i + dir;
+    if (ni < 0 || ni >= list.length) return;
+    if (pinnedLocksSlotZero() && (i === 0 || ni === 0)) return;
+    [list[i], list[ni]] = [list[ni], list[i]];
+    state.selectedPlaylistIndex = ni;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+  }
+
+  function removeAt(i){
+    const list = currentPlaylist();
+    if (pinnedLocksSlotZero() && i === 0){ log("Không thể xoá bài ghim đầu — bỏ ghim trước.", "err"); return; }
+    list.splice(i, 1);
+    if (state.selectedPlaylistIndex === i) state.selectedPlaylistIndex = null;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+  }
+
+  function shufflePlaylistOrder(){
+    const list = currentPlaylist();
+    const firstMovable = pinnedLocksSlotZero() ? 1 : 0;
+    if (list.length - firstMovable < 2){ log("Cần ít nhất 2 bài có thể di chuyển để trộn thứ tự.", "err"); return; }
+    for (let i = list.length - 1; i > firstMovable; i--){
+      const j = firstMovable + Math.floor(Math.random() * (i - firstMovable + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    state.selectedPlaylistIndex = null;
+    renderPlaylist(); scheduleMusicLibrarySave();
+    log("Đã trộn thứ tự playlist; bài ghim vẫn ở đầu.", "ok");
+  }
+
+  function sortPlaylistByTitle(){
+    const list = currentPlaylist();
+    if (list.length < 2){ log("Playlist cần ít nhất 2 bài để sắp xếp.", "err"); return; }
+    const firstMovable = pinnedLocksSlotZero() ? 1 : 0;
+    const collator = new Intl.Collator("vi", {numeric:true, sensitivity:"base"});
+    const sorted = list.slice(firstMovable).sort((a,b) => collator.compare(trackTitle(a), trackTitle(b)));
+    list.splice(firstMovable, list.length - firstMovable, ...sorted);
+    state.selectedPlaylistIndex = null;
+    renderPlaylist(); scheduleMusicLibrarySave();
+    log("Đã sắp xếp playlist theo tên A → Z; bài ghim vẫn ở đầu.", "ok");
+  }
+
+  function removePlaylistDuplicates(){
+    const list = currentPlaylist();
+    const seen = new Set();
+    const unique = list.filter(track => {
+      if (seen.has(track.id)) return false;
+      seen.add(track.id); return true;
+    });
+    const removed = list.length - unique.length;
+    if (!removed){ log("Playlist không có mục trùng cùng file.", "ok"); return; }
+    state.partitionPlaylist[state.activePartition] = unique;
+    state.selectedPlaylistIndex = null;
+    renderPlaylist(); scheduleMusicLibrarySave();
+    log("Đã gỡ " + removed + " mục trùng khỏi playlist.", "ok");
+  }
+
+  function clearCurrentPlaylist(){
+    const list = currentPlaylist();
+    if (!list.length){ log("Playlist hiện tại đã trống."); return; }
+    if (!confirm("Xóa toàn bộ " + list.length + " bài khỏi playlist " + state.activePartition + "?")) return;
+    state.partitionPlaylist[state.activePartition] = [];
+    state.selectedPlaylistIndex = null;
+    renderPlaylist(); scheduleMusicLibrarySave();
+    log("Đã xóa playlist " + state.activePartition + ".", "ok");
+  }
+
+  function downloadCurrentTracklist(){
+    const list = currentPlaylist();
+    if (!list.length){ log("Playlist đang trống — chưa có tracklist để tải.", "err"); return; }
+    let cursor = 0;
+    const overlapRequested = $("crossfade").checked ? Math.max(0, Number($("crossfadeSec").value) || 0) : 0;
+    const infos = list.map((track, i) => {
+      const durationSec = Math.max(0, Number(track.duration) || 0);
+      const info = {
+        name: [track.metadata?.artist, trackTitle(track)].filter(Boolean).join(" — "),
+        durationSec,
+        startSec: cursor
+      };
+      if (i < list.length - 1){
+        const nextDuration = Math.max(0, Number(list[i+1].duration) || 0);
+        const overlap = Math.min(overlapRequested, durationSec, nextDuration);
+        cursor += Math.max(0, durationSec - overlap);
+      }
+      return info;
+    });
+    const mixName = $("playlistNameInput").value.trim() || ("Playlist_" + state.activePartition);
+    const text = buildTracklistText(infos, mixName) + "\n\nYOUTUBE TIMESTAMPS (ước tính)\n" + buildYoutubeTimestamps(infos) + "\n";
+    const filename = (sanitizeFilename(mixName) || "playlist") + "_tracklist.txt";
+    downloadBlob(new Blob(["\uFEFF", text], {type:"text/plain;charset=utf-8"}), filename);
+    log("Đã tải tracklist " + filename + ". Mốc thời gian ước tính có tính crossfade đã chọn.", "ok");
+  }
+
+  function doReplace(index){
+    const list = currentPlaylist();
+    if (state.selectedSourceId == null){ log("Chọn 1 bài trong KHO NGUỒN trước.", "err"); return; }
+    if (pinnedLocksSlotZero() && index === 0){ log("Không thể thay bài ghim đầu.", "err"); return; }
+    const partition = state.activePartition;
+    const src = state.partitions[partition].find(t => t.id === state.selectedSourceId);
+    if (!src) return;
+    const dup = list.findIndex((t, i) => t.id === src.id && i !== index);
+    if (dup !== -1){ log("Bài này đã có trong playlist rồi.", "err"); return; }
+    list[index] = src;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+    log(`Đã thay vị trí ${index+1} bằng "${src.name}".`, "ok");
+  }
+
+  function togglePin(trackId){
+    if (state.pinned === trackId){
+      state.pinned = null;
+    } else {
+      state.pinned = trackId;
+      const partition = state.activePartition;
+      const inThisPool = state.partitions[partition].some(t => t.id === trackId);
+      if (inThisPool){
+        const list = currentPlaylist();
+        const idx = list.findIndex(t => t.id === trackId);
+        if (idx > 0){
+          const [tr] = list.splice(idx, 1);
+          list.unshift(tr);
+        } else if (idx === -1){
+          const track = state.partitions[partition].find(t => t.id === trackId);
+          list.unshift(track);
+        }
+      }
+    }
+    renderPool();
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+  }
+
+  function randomizeList(){
+    const partition = state.activePartition;
+    const pool = activeSourcePool();
+    const n = parseInt($("randomCount").value, 10);
+    if (!n || n < 1){ log("Nhập số bài hợp lệ.", "err"); return; }
+    if (!pool.length){ log("Kho nguồn đang trống.", "err"); return; }
+    const pinnedTrack = state.pinned ? pool.find(t => t.id === state.pinned) : null;
+    const need = Math.max(0, n - (pinnedTrack ? 1 : 0));
+    const chosen = getRandomCandidates(pool, need);
+    const newList = [];
+    if (pinnedTrack) newList.push(pinnedTrack);
+    newList.push(...chosen);
+    if (newList.length < n){
+      log(`Chỉ tìm được ${newList.length}/${n} bài theo chế độ chống trùng hiện tại.`, "err");
+    }
+    state.partitionPlaylist[partition] = newList;
+    state.selectedPlaylistIndex = null;
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+    log(`Đã tạo playlist ngẫu nhiên: ${newList.length} bài (${partition}) — ${$("dedupeMode").value}.`, "ok");
+  }
+
+  function removeFromPool(trackId){
+    const partition = state.activePartition;
+    const pool = state.partitions[partition];
+    const idx = pool.findIndex(t => t.id === trackId && (partition !== "Remix" || (t.remixPoolId||"rp1") === activeRemixPool()?.id));
+    if (idx === -1) return;
+    const track = pool[idx];
+    pool.splice(idx, 1);
+    Object.keys(state.partitionPlaylist).forEach(p => {
+      state.partitionPlaylist[p] = state.partitionPlaylist[p].filter(t => t.id !== trackId);
+    });
+    if (state.pinned === trackId) state.pinned = null;
+    if (state.selectedSourceId === trackId) state.selectedSourceId = null;
+    state.selectedPlaylistIndex = null;
+    if (previewTrackId === trackId) stopPreview();
+
+    renderPool();
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+    log(`Đã xoá "${track.name}" khỏi kho.`);
+  }
+
+  function clearPool(){
+    const partition = state.activePartition;
+    if (!confirm(`Xoá toàn bộ kho nguồn của ${partition}?`)) return;
+    if (partition === "Remix"){
+      const rp = activeRemixPool();
+      state.partitions.Remix = state.partitions.Remix.filter(t=>(t.remixPoolId||"rp1") !== rp.id);
+      state.partitionPlaylist.Remix = state.partitionPlaylist.Remix.filter(t=>(t.remixPoolId||"rp1") !== rp.id);
+    } else {
+      state.partitions[partition] = [];
+      state.partitionPlaylist[partition] = [];
+    }
+    if (state.pinned && !Object.values(state.partitions).some(p => p.some(t => t.id === state.pinned))){
+      state.pinned = null;
+    }
+    state.selectedSourceId = null;
+    state.selectedPlaylistIndex = null;
+    stopPreview();
+
+    renderPool();
+    renderPlaylist();
+    scheduleMusicLibrarySave();
+    log(`Đã xoá kho ${partition}.`);
+  }
+
+  function setPartition(p){
+    state.activePartition = p;
+    state.selectedSourceId = null;
+    state.selectedPlaylistIndex = null;
+    $("tabRemix").classList.toggle("active", p === "Remix");
+    $("tabLofi").classList.toggle("active", p === "Lofi");
+    renderRemixPools();
+    renderPool();
+    renderPlaylist();
+  }
+
+  // ---------- DSP helpers ----------
+
+  function trimSilence(audioBuffer, threshold){
+    threshold = threshold || 0.015;
+    const ch0 = audioBuffer.getChannelData(0);
+    const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : ch0;
+    const n = ch0.length;
+    let start = 0;
+    while (start < n){
+      if (Math.max(Math.abs(ch0[start]), Math.abs(ch1[start])) > threshold) break;
+      start++;
+    }
+    let end = n - 1;
+    while (end > start){
+      if (Math.max(Math.abs(ch0[end]), Math.abs(ch1[end])) > threshold) break;
+      end--;
+    }
+    if (end <= start){ start = 0; end = n - 1; }
+    return { left: ch0.slice(start, end+1), right: ch1.slice(start, end+1) };
+  }
+
+  function applyEdgeDeclick(arr, sampleRate, fadeMs){
+    fadeMs = fadeMs || 8;
+    const n = Math.min(arr.length, Math.floor(sampleRate * fadeMs / 1000));
+    for (let i = 0; i < n; i++){
+      const g = i / n;
+      arr[i] *= g;
+      arr[arr.length - 1 - i] *= g;
+    }
+  }
+
+  function applyMasterFade(arr, sampleRate, sec, kind){
+    if (!sec || sec <= 0) return;
+    const n = Math.min(arr.length, Math.floor(sampleRate * sec));
+    if (n <= 0) return;
+    if (kind === "in"){
+      for (let i = 0; i < n; i++){ arr[i] *= (i / n); }
+    } else {
+      for (let i = 0; i < n; i++){ arr[arr.length - 1 - i] *= (i / n); }
+    }
+  }
+
+  function computeRMS(left, right){
+    const n = left.length;
+    if (!n) return 0;
+    let sum = 0;
+    // sample a subset for very long tracks to keep this fast
+    const step = n > 2000000 ? Math.floor(n / 2000000) : 1;
+    let count = 0;
+    for (let i = 0; i < n; i += step){
+      sum += left[i]*left[i] + right[i]*right[i];
+      count++;
+    }
+    return Math.sqrt(sum / (count * 2));
+  }
+
+  function buildMixWithCrossfade(chunks, sr, crossfadeSec){
+    const n = chunks.length;
+    if (n === 0) return { left: new Float32Array(0), right: new Float32Array(0), starts: [] };
+    const fadeTarget = Math.max(0, Math.floor((crossfadeSec || 0) * sr));
+    const maxLen = chunks.reduce((s,c) => s + c.left.length, 0);
+    const left = new Float32Array(maxLen);
+    const right = new Float32Array(maxLen);
+    const starts = [];
+    let pos = 0;
+    for (let i = 0; i < n; i++){
+      const c = chunks[i];
+      if (i === 0){
+        left.set(c.left, 0);
+        right.set(c.right, 0);
+        starts.push(0);
+        pos = c.left.length;
+      } else {
+        const prevLen = chunks[i-1].left.length;
+        const fadeSamples = Math.min(fadeTarget, Math.floor(prevLen*0.9), Math.floor(c.left.length*0.9));
+        const overlapStart = pos - fadeSamples;
+        for (let j = 0; j < fadeSamples; j++){
+          const t = j / fadeSamples;
+          const gOut = Math.cos(t * Math.PI / 2);
+          const gIn = Math.sin(t * Math.PI / 2);
+          left[overlapStart+j] = left[overlapStart+j]*gOut + c.left[j]*gIn;
+          right[overlapStart+j] = right[overlapStart+j]*gOut + c.right[j]*gIn;
+        }
+        const remainLen = c.left.length - fadeSamples;
+        left.set(c.left.subarray(fadeSamples), overlapStart+fadeSamples);
+        right.set(c.right.subarray(fadeSamples), overlapStart+fadeSamples);
+        starts.push(overlapStart);
+        pos = overlapStart + fadeSamples + remainLen;
+      }
+    }
+    return { left: left.subarray(0,pos), right: right.subarray(0,pos), starts, totalLen: pos };
+  }
+
+  function onePoleLowpass(arr, sr, cutoffHz){
+    const rc = 1 / (2 * Math.PI * cutoffHz);
+    const dt = 1 / sr;
+    const alpha = dt / (rc + dt);
+    const out = new Float32Array(arr.length);
+    let prev = 0;
+    for (let i = 0; i < arr.length; i++){
+      prev = prev + alpha * (arr[i] - prev);
+      out[i] = prev;
+    }
+    return out;
+  }
+
+  function applyEdgeNoiseCut(arr, sampleRate, maxSec){
+    // Gentle edge cleanup: remove only very-low-level hiss/noise near each edge.
+    maxSec = maxSec == null ? 0.12 : Math.max(0, maxSec);
+    const maxSamples = Math.min(arr.length, Math.floor(sampleRate * maxSec));
+    if (maxSamples < 32) return 0;
+    const window = Math.max(32, Math.floor(sampleRate * 0.015));
+    const threshold = 0.0105;
+    let start = 0, end = arr.length - 1;
+    for (let pos = 0; pos + window <= maxSamples; pos += Math.max(1, Math.floor(window / 2))){
+      let peak = 0, sum = 0;
+      for (let i = pos; i < pos + window; i++){ const v = Math.abs(arr[i]); peak = Math.max(peak, v); sum += v*v; }
+      if (peak > threshold || Math.sqrt(sum / window) > 0.0035) break;
+      start = pos + window;
+    }
+    for (let pos = arr.length - window; pos >= arr.length - maxSamples; pos -= Math.max(1, Math.floor(window / 2))){
+      if (pos < 0) break;
+      let peak = 0, sum = 0;
+      for (let i = pos; i < pos + window; i++){ const v = Math.abs(arr[i]); peak = Math.max(peak, v); sum += v*v; }
+      if (peak > threshold || Math.sqrt(sum / window) > 0.0035) break;
+      end = pos - 1;
+    }
+    if (start > 0){
+      const n = Math.min(start, Math.floor(sampleRate * 0.012));
+      for (let i = 0; i < n; i++) arr[i] *= i / n;
+    }
+    if (end < arr.length - 1){
+      const n = Math.min(arr.length - 1 - end, Math.floor(sampleRate * 0.012));
+      for (let i = 0; i < n; i++) arr[arr.length - 1 - i] *= i / n;
+    }
+    return Math.max(0, start + (arr.length - 1 - end));
+  }
+
+  function applyPresenceEnhance(arr, sr, amount){
+    amount = Math.max(0, Math.min(1, amount || 0));
+    if (!amount) return;
+    // Gentle presence/air lift, intentionally capped to avoid harsh hiss.
+    const hpCut = 4200;
+    const rc = 1 / (2 * Math.PI * hpCut);
+    const dt = 1 / sr;
+    const alpha = rc / (rc + dt);
+    let prevX = 0, prevY = 0;
+    const gain = 1 + amount * 0.42;
+    for (let i = 0; i < arr.length; i++){
+      const x = arr[i];
+      const y = alpha * (prevY + x - prevX);
+      prevX = x; prevY = y;
+      arr[i] = Math.max(-1, Math.min(1, x + y * (gain - 1)));
+    }
+  }
+
+  function applyPresenceStereo(left, right, sr, amount){
+    applyPresenceEnhance(left, sr, amount);
+    applyPresenceEnhance(right, sr, amount);
+  }
+
+  function apply8D(left, right, sr, opts){
+    const period = opts.period || 9;
+    const intensity = opts.intensity == null ? 1 : opts.intensity;
+    const width = opts.width == null ? 1 : opts.width;
+    const depth = opts.depth == null ? 0 : opts.depth;
+    const keepBass = !!opts.keepBass;
+    const keepVocal = !!opts.keepVocal;
+    const binaural = !!opts.binaural;
+    const n = left.length;
+
+    const mono = new Float32Array(n);
+    const side = new Float32Array(n);
+    for (let i = 0; i < n; i++){
+      mono[i] = (left[i] + right[i]) * 0.5;
+      side[i] = (left[i] - right[i]) * 0.5;
+    }
+
+    const bass = onePoleLowpass(mono, sr, 200);
+    const rest1 = new Float32Array(n);
+    for (let i = 0; i < n; i++) rest1[i] = mono[i] - bass[i];
+    const vocal = onePoleLowpass(rest1, sr, 4000);
+    const treble = new Float32Array(n);
+    for (let i = 0; i < n; i++) treble[i] = rest1[i] - vocal[i];
+
+    const itd = binaural ? Math.max(1, Math.round(sr * 0.00025)) : 0;
+    const outL = new Float32Array(n);
+    const outR = new Float32Array(n);
+
+    for (let i = 0; i < n; i++){
+      const t = i / sr;
+      const phase = 2 * Math.PI * t / period;
+      const p = Math.sin(phase);
+      const angle = (p + 1) * Math.PI / 4;
+      let gL = Math.cos(angle) * Math.SQRT2;
+      let gR = Math.sin(angle) * Math.SQRT2;
+      if (depth > 0){
+        const distG = 1 - depth * 0.3 * ((1 - Math.cos(phase)) / 2);
+        gL *= distG; gR *= distG;
+      }
+
+      const srcIdx = binaural ? Math.max(0, i - itd) : i;
+      let panTL = treble[srcIdx] * gL;
+      let panTR = treble[srcIdx] * gR;
+      if (binaural){
+        if (gL < gR) panTL *= 0.82; else panTR *= 0.82;
+      }
+
+      let vL, vR;
+      if (keepVocal){ vL = vocal[i]; vR = vocal[i]; }
+      else { vL = vocal[i] * (0.5 + gL*0.5); vR = vocal[i] * (0.5 + gR*0.5); }
+
+      let bL, bR;
+      if (keepBass){ bL = bass[i]; bR = bass[i]; }
+      else { bL = bass[i] * (0.7 + gL*0.3); bR = bass[i] * (0.7 + gR*0.3); }
+
+      const sideScaled = side[i] * width;
+
+      outL[i] = bL + vL + panTL + sideScaled;
+      outR[i] = bR + vR + panTR - sideScaled;
+    }
+
+    for (let i = 0; i < n; i++){
+      left[i] = left[i] * (1 - intensity) + outL[i] * intensity;
+      right[i] = right[i] * (1 - intensity) + outR[i] * intensity;
+    }
+  }
+
+  function encodeWAV(left, right, sampleRate, metadata){
+    const numFrames = left.length;
+    const blockAlign = 4;
+    const dataSize = numFrames * blockAlign;
+    const info = metadata || {};
+    const entries = [
+      ["INAM", info.title || ""], ["IART", info.artist || ""], ["IPRD", info.album || ""],
+      ["IGNR", info.genre || ""], ["ICMT", info.comment || ""], ["ICRD", info.year ? String(info.year) : ""]
+    ].filter(x => x[1]);
+    let listPayload = 4;
+    for (const [,value] of entries){
+      const bytes = new TextEncoder().encode(String(value) + "\0");
+      listPayload += 8 + bytes.length + (bytes.length % 2);
+    }
+    const listChunkSize = entries.length ? 8 + listPayload : 0;
+    const totalSize = 44 + dataSize + listChunkSize;
+    const buffer = new ArrayBuffer(totalSize);
+    const view = new DataView(buffer);
+    const enc = new TextEncoder();
+    function writeStr(offset, str){
+      for (let i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i));
+    }
+    writeStr(0,"RIFF"); view.setUint32(4,totalSize-8,true); writeStr(8,"WAVE");
+    writeStr(12,"fmt "); view.setUint32(16,16,true); view.setUint16(20,1,true);
+    view.setUint16(22,2,true); view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate*blockAlign,true); view.setUint16(32,blockAlign,true); view.setUint16(34,16,true);
+    writeStr(36,"data"); view.setUint32(40,dataSize,true);
+    let offset=44;
+    for(let i=0;i<numFrames;i++){
+      const l=Math.max(-1,Math.min(1,left[i])), r=Math.max(-1,Math.min(1,right[i]));
+      view.setInt16(offset,l<0?l*0x8000:l*0x7FFF,true); offset+=2;
+      view.setInt16(offset,r<0?r*0x8000:r*0x7FFF,true); offset+=2;
+    }
+    if(entries.length){
+      writeStr(offset,"LIST"); view.setUint32(offset+4,listPayload,true); writeStr(offset+8,"INFO"); offset+=12;
+      for(const [key,value] of entries){
+        writeStr(offset,key);
+        const bytes=enc.encode(String(value)+"\0");
+        view.setUint32(offset+4,bytes.length,true);
+        new Uint8Array(buffer,offset+8,bytes.length).set(bytes);
+        offset+=8+bytes.length+(bytes.length%2);
+      }
+    }
+    return new Blob([buffer],{type:"audio/wav"});
+  }
+
+  async function encodeMP3(left, right, sr, bitrate, metadata){
+    // Prefer WebCodecs' native MP3 encoder. The resulting EncodedAudioChunks
+    // are already MP3 frames, so they can be concatenated into a valid .mp3.
+    if (window.AudioEncoder && window.AudioData){
+      try{
+        const cfg = {
+          codec: "mp3",
+          sampleRate: sr,
+          numberOfChannels: 2,
+          bitrate: Math.max(64000, Math.min(320000, Number(bitrate || 320) * 1000))
+        };
+        if (window.AudioEncoder.isConfigSupported){
+          const support = await window.AudioEncoder.isConfigSupported(cfg);
+          if (!support?.supported) throw new Error("Trình duyệt không hỗ trợ codec MP3 qua WebCodecs.");
+        }
+        const chunks=[];
+        let encoderError=null;
+        const enc = new AudioEncoder({
+          output(chunk){
+            const data = new Uint8Array(chunk.byteLength);
+            chunk.copyTo(data);
+            chunks.push(data);
+          },
+          error(e){ encoderError=e; }
+        });
+        enc.configure(cfg);
+        const block = 1152;
+        let frameIndex=0;
+        while(frameIndex < left.length){
+          const frames=Math.min(block,left.length-frameIndex);
+          const interleaved=new Float32Array(frames*2);
+          for(let i=0;i<frames;i++){
+            interleaved[i*2]=left[frameIndex+i];
+            interleaved[i*2+1]=right[frameIndex+i];
+          }
+          const audioData=new AudioData({
+            format:"f32",
+            sampleRate:sr,
+            numberOfFrames:frames,
+            numberOfChannels:2,
+            timestamp:Math.round(frameIndex * 1000000 / sr),
+            data:interleaved
+          });
+          enc.encode(audioData);
+          audioData.close();
+          frameIndex+=frames;
+        }
+        await enc.flush();
+        enc.close();
+        if(encoderError) throw encoderError;
+        if(!chunks.length) throw new Error("MP3 encoder không tạo ra dữ liệu.");
+        return new Blob([makeID3v24Tag(metadata), ...chunks], {type:"audio/mpeg"});
+      }catch(err){
+        console.warn("WebCodecs MP3 failed:", err);
+      }
+    }
+
+    // Fallback for browsers that expose MediaRecorder with MPEG audio.
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported?.("audio/mpeg")){
+      try{
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC) return null;
+        const ctx=new AC({sampleRate:sr});
+        const buffer=ctx.createBuffer(2,left.length,sr);
+        buffer.copyToChannel(left,0); buffer.copyToChannel(right,1);
+        const dest=ctx.createMediaStreamDestination();
+        const source=ctx.createBufferSource(); source.buffer=buffer; source.connect(dest);
+        const parts=[];
+        const rec=new MediaRecorder(dest.stream,{mimeType:"audio/mpeg",audioBitsPerSecond:Number(bitrate||320)*1000});
+        const done=new Promise((resolve,reject)=>{
+          rec.ondataavailable=e=>{if(e.data?.size)parts.push(e.data)};
+          rec.onerror=e=>reject(e.error||new Error("MediaRecorder MP3 error"));
+          rec.onstop=()=>resolve();
+        });
+        rec.start(1000); source.start(); source.onended=()=>rec.stop();
+        await done;
+        try{await ctx.close()}catch{}
+        const blob=new Blob(parts,{type:"audio/mpeg"});
+        return new Blob([makeID3v24Tag(metadata), blob],{type:"audio/mpeg"});
+      }catch(err){ console.warn("MediaRecorder MP3 failed:",err); }
+    }
+    return null;
+  }
+
+  function makeID3v24Tag(metadata={}){
+    const frames=[];
+    const textFrames=[
+      ["TIT2",metadata.title], ["TPE1",metadata.artist], ["TALB",metadata.album],
+      ["TCON",metadata.genre], ["TYER",metadata.year], ["COMM",metadata.comment]
+    ];
+    const enc=new TextEncoder();
+    const synchsafe=n => new Uint8Array([(n>>21)&0x7F,(n>>14)&0x7F,(n>>7)&0x7F,n&0x7F]);
+    for(const [id,value] of textFrames){
+      if(!value) continue;
+      const payload=new Uint8Array(1+enc.encode(String(value)).length);
+      payload[0]=0x03; payload.set(enc.encode(String(value)),1);
+      const frame=new Uint8Array(10+payload.length);
+      for(let i=0;i<4;i++) frame[i]=id.charCodeAt(i);
+      frame.set(synchsafe(payload.length),4);
+      frame.set(payload,10);
+      frames.push(frame);
+    }
+    const size=frames.reduce((n,f)=>n+f.length,0);
+    const tag=new Uint8Array(10+size);
+    tag.set([0x49,0x44,0x33,0x04,0x00,0x00],0); // ID3 v2.4
+    tag.set(synchsafe(size),6);
+    let off=10; for(const f of frames){tag.set(f,off); off+=f.length;}
+    return tag;
+  }
+
+  async function encodeCompressedWithMediaRecorder(left,right,sr,format,bitrate){
+    if(format === "mp3") return encodeMP3(left,right,sr,bitrate,{});
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC || !window.MediaRecorder) return null;
+    const candidates = format==="ogg"
+      ? ["audio/ogg;codecs=opus","audio/ogg;codecs=vorbis","audio/ogg"]
+      : [];
+    const mime = candidates.find(m => MediaRecorder.isTypeSupported?.(m));
+    if(!mime) return null;
+    const ctx = new AC({sampleRate:sr});
+    const buffer=ctx.createBuffer(2,left.length,sr);
+    buffer.copyToChannel(left,0); buffer.copyToChannel(right,1);
+    const dest=ctx.createMediaStreamDestination();
+    const source=ctx.createBufferSource(); source.buffer=buffer; source.connect(dest);
+    const chunks=[];
+    const rec=new MediaRecorder(dest.stream,{mimeType:mime,audioBitsPerSecond:bitrate*1000});
+    const done=new Promise((resolve,reject)=>{
+      rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+      rec.onerror=e=>reject(e.error||new Error("MediaRecorder error"));
+      rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));
+    });
+    rec.start(1000); source.start(); source.onended=()=>rec.stop();
+    const result=await done;
+    try{await ctx.close()}catch{}
+    return result;
+  }
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function saveOutput(blob, filename){
+    if (dirHandle){
+      try{
+        const fh = await dirHandle.getFileHandle(filename, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        log(`Đã lưu ${filename} vào thư mục đã chọn.`, "ok");
+        return;
+      } catch(e){
+        log(`Không lưu được vào thư mục đã chọn (${e.message}), sẽ tải về thay thế.`, "err");
+      }
+    }
+    downloadBlob(blob, filename);
+  }
+
+  function stripExt(name){
+    return name.replace(/\.[^/.]+$/, "");
+  }
+
+  function sanitizeFilename(name){
+    const cleaned = String(name || "").trim().replace(/[\\\/:*?"<>|]+/g, "_");
+    return cleaned || "merged_output";
+  }
+
+  function formatMMSS(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function formatHHMMSS(sec){
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function formatSRTTime(sec){
+    sec = Math.max(0, sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    const ms = Math.round((sec - Math.floor(sec)) * 1000);
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`;
+  }
+
+  function buildYoutubeTimestamps(infos){
+    if (!infos.length) return "";
+    const total = infos[infos.length-1].startSec + infos[infos.length-1].durationSec;
+    const useHours = total >= 3600;
+    return infos.map(t => {
+      const ts = useHours ? formatHHMMSS(t.startSec) : formatMMSS(t.startSec);
+      return `${ts} ${stripExt(t.name)}`;
+    }).join("\n");
+  }
+
+  function buildSRT(infos){
+    const lines = [];
+    infos.forEach((t, i) => {
+      const start = t.startSec;
+      const end = t.startSec + t.durationSec;
+      lines.push(String(i + 1));
+      lines.push(`${formatSRTTime(start)} --> ${formatSRTTime(end)}`);
+      lines.push(stripExt(t.name));
+      lines.push("");
+    });
+    return lines.join("\n");
+  }
+
+  function buildTracklistText(infos, mixName){
+    const total = infos.length ? infos[infos.length-1].startSec + infos[infos.length-1].durationSec : 0;
+    const lines = [];
+    lines.push(`PLAYLIST MIX BUILDER — TRACKLIST${mixName ? " — " + mixName : ""}`);
+    lines.push(`Tổng số bài: ${infos.length}`);
+    lines.push(`Tổng thời lượng: ${formatTime(total)}`);
+    lines.push("");
+    infos.forEach((t, i) => {
+      lines.push(`${String(i+1).padStart(2,"0")}. [${formatTime(t.startSec)}] ${t.name}  (${formatTime(t.durationSec)})`);
+    });
+    return lines.join("\n");
+  }
+
+  // ---------- merge / export ----------
+
+  function buildExportBaseName(name, tracks){
+    const pattern=$("exportFilePattern")?.value.trim() || "{playlist}";
+    // If the user did not explicitly enter an export/playlist name, use the
+    // renamed title of the first track. This makes the exported filename follow
+    // the name changed in KHO NGUỒN / Chỉnh Metadata.
+    const first = Array.isArray(tracks) && tracks.length ? tracks[0] : null;
+    const renamedTitle = first ? (first.metadata?.title || stripExt(first.name || "")) : "";
+    const playlistInput = $("playlistNameInput")?.value.trim() || "";
+    const playlist = name?.trim() || playlistInput || renamedTitle || "merged_output";
+    const artist=$("exportArtist")?.value.trim() || "";
+    const remixer=$("exportRemixer")?.value.trim() || "";
+    const result=pattern
+      .replaceAll("{playlist}",playlist)
+      .replaceAll("{artist}",artist)
+      .replaceAll("{remix}",remixer)
+      .replace(/\s{2,}/g," ").trim();
+    return sanitizeFilename(result || playlist);
+  }
+
+  async function mergeMix(exportName, tracksOverride){
+    const list = tracksOverride || currentPlaylist();
+    if (!list.length){ log("Playlist đang trống.", "err"); return false; }
+    const requestedExportName = (typeof exportName === "string" ? exportName.trim() : "");
+    const baseName = buildExportBaseName(requestedExportName, list);
+    setBusy(true);
+    log(`Bắt đầu ghép "${baseName}" — ${list.length} bài (${state.activePartition})...`);
+    let ctx;
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 }); }
+    catch(e){ ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+    const sr = ctx.sampleRate;
+    const cutSilence = $("cutSilence").checked;
+    const doNormalize = $("normalizeVolume").checked;
+    const doFadeIn = $("fadeIn").checked;
+    const fadeInSec = parseFloat($("fadeInSec").value) || 0;
+    const doFadeOut = $("fadeOut").checked;
+    const fadeOutSec = parseFloat($("fadeOutSec").value) || 0;
+    const doCrossfade = $("crossfade").checked;
+    const crossfadeSec = doCrossfade ? (parseFloat($("crossfadeSec").value) || 0) : 0;
+    const exportFormat = tracksOverride?.__exportFormat || $("exportFormat")?.value || "wav";
+    const exportBitrate = Number(tracksOverride?.__exportBitrate || $("exportBitrate")?.value || 320);
+    const exportArtist = tracksOverride?.__artist ?? $("exportArtist")?.value.trim() ?? "";
+    const exportRemixer = tracksOverride?.__remixer ?? $("exportRemixer")?.value.trim() ?? "";
+
+    const chunks = [];
+    const names = [];
+
+    for (let i = 0; i < list.length; i++){
+      const tr = list[i];
+      log(`(${i+1}/${list.length}) Đang xử lý: ${tr.name}`);
+      try{
+        const arrBuf = await tr.file.arrayBuffer();
+        const audioBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+        let l, r;
+        if (cutSilence){
+          const originalDur = audioBuf.duration;
+          const trimmed = trimSilence(audioBuf);
+          l = Float32Array.from(trimmed.left);
+          r = Float32Array.from(trimmed.right);
+          const cutAmount = originalDur - (l.length / sr);
+          if (cutAmount > 0.05){
+            log(`   ↳ đã cắt ${cutAmount.toFixed(2)}s khoảng lặng đầu/cuối.`);
+          }
+        } else {
+          l = Float32Array.from(audioBuf.getChannelData(0));
+          r = audioBuf.numberOfChannels > 1 ? Float32Array.from(audioBuf.getChannelData(1)) : Float32Array.from(audioBuf.getChannelData(0));
+        }
+        chunks.push({ left: l, right: r });
+        names.push(trackTitle(tr));
+      } catch(err){
+        log(`⚠ Lỗi khi đọc "${tr.name}": ${err.message}. Đã bỏ qua bài này.`, "err");
+      }
+    }
+
+    if (!chunks.length){
+      log("Không xử lý được bài nào — kiểm tra lại định dạng file.", "err");
+      setBusy(false);
+      return false;
+    }
+
+    if (doNormalize && chunks.length > 1){
+      const rmsList = chunks.map(c => computeRMS(c.left, c.right));
+      const sorted = rmsList.slice().sort((a,b) => a-b);
+      const mid = Math.floor(sorted.length/2);
+      const targetRMS = sorted.length % 2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+      if (targetRMS > 0){
+        chunks.forEach((c, i) => {
+          if (rmsList[i] <= 0) return;
+          let gain = targetRMS / rmsList[i];
+          gain = Math.max(0.4, Math.min(2.5, gain));
+          if (Math.abs(gain - 1) > 0.08){
+            const db = (20 * Math.log10(gain)).toFixed(1);
+            log(`   ↳ cân bằng âm lượng "${names[i]}": ${db > 0 ? "+" : ""}${db} dB`);
+          }
+          for (let j = 0; j < c.left.length; j++){ c.left[j] *= gain; c.right[j] *= gain; }
+        });
+      }
+    }
+
+    // small anti-click declick at edges, only meaningful where there's no crossfade overlap
+    chunks.forEach(c => {
+      applyEdgeDeclick(c.left, sr);
+      applyEdgeDeclick(c.right, sr);
+      if ($("edgeNoiseCut")?.checked){
+        applyEdgeNoiseCut(c.left, sr, 0.12);
+        applyEdgeNoiseCut(c.right, sr, 0.12);
+      }
+    });
+
+    const doPresence = $("presenceEnhance")?.checked;
+    const presenceAmount = (parseFloat($("presenceIntensity")?.value) || 0) / 100;
+    if (doPresence && presenceAmount > 0){
+      log(`Đang tăng cảm âm/presence ${Math.round(presenceAmount*100)}%...`);
+      chunks.forEach(c => applyPresenceStereo(c.left, c.right, sr, presenceAmount));
+    }
+
+    log(doCrossfade ? `Đang ghép với crossfade ${crossfadeSec}s giữa các bài...` : "Đang ghép nối các bài...");
+    const mixed = buildMixWithCrossfade(chunks, sr, crossfadeSec);
+    const finalLeft = Float32Array.from(mixed.left);
+    const finalRight = Float32Array.from(mixed.right);
+
+    const infos = chunks.map((c, i) => ({
+      name: names[i],
+      durationSec: c.left.length / sr,
+      startSec: mixed.starts[i] / sr
+    }));
+
+    if (doFadeIn){ log(`Đang áp dụng Fade In ${fadeInSec}s...`); applyMasterFade(finalLeft, sr, fadeInSec, "in"); applyMasterFade(finalRight, sr, fadeInSec, "in"); }
+    if (doFadeOut){ log(`Đang áp dụng Fade Out ${fadeOutSec}s...`); applyMasterFade(finalLeft, sr, fadeOutSec, "out"); applyMasterFade(finalRight, sr, fadeOutSec, "out"); }
+
+    if ($("eightD").checked){
+      const period = parseFloat($("eightDPeriod").value) || 9;
+      const intensity = (parseFloat($("eightDIntensity").value) || 0) / 100;
+      const width = (parseFloat($("eightDWidth").value) || 100) / 100;
+      const depth = (parseFloat($("eightDDepth").value) || 0) / 100;
+      const keepBass = $("eightDKeepBass").checked;
+      const keepVocal = $("eightDKeepVocal").checked;
+      const binaural = $("eightDBinaural").checked;
+      log(`Đang áp dụng hiệu ứng 8D (chu kỳ ${period}s, cường độ ${Math.round(intensity*100)}%, độ rộng ${Math.round(width*100)}%, depth ${Math.round(depth*100)}%${binaural ? ", binaural giả lập" : ""})...`);
+      apply8D(finalLeft, finalRight, sr, { period, intensity, width, depth, keepBass, keepVocal, binaural });
+    }
+
+    const audioMeta = {
+      title: baseName,
+      artist: exportArtist,
+      album: $("playlistNameInput")?.value.trim() || baseName,
+      genre: state.activePartition,
+      comment: exportRemixer ? `Remix by ${exportRemixer}` : "",
+      year: new Date().getFullYear()
+    };
+    let audioBlob = null;
+    let extension = exportFormat;
+    if (exportFormat === "mp3"){
+      log(`Đang mã hoá MP3 ${exportBitrate} kbps...`);
+      audioBlob = await encodeMP3(finalLeft, finalRight, sr, exportBitrate, audioMeta);
+      if (!audioBlob){
+        log("Trình duyệt hiện tại không hỗ trợ bộ mã hoá MP3. Hãy dùng Chrome/Edge phiên bản mới rồi thử lại.", "err");
+        setBusy(false); return false;
+      }
+    } else if (exportFormat === "wav"){
+      log("Đang mã hoá WAV (16-bit PCM) + metadata...");
+      audioBlob = encodeWAV(finalLeft, finalRight, sr, audioMeta);
+    } else if (exportFormat === "ogg"){
+      log(`Đang mã hoá OGG ${exportBitrate} kbps bằng bộ mã hoá MediaRecorder của trình duyệt...`);
+      audioBlob = await encodeCompressedWithMediaRecorder(finalLeft, finalRight, sr, "ogg", exportBitrate);
+      if (!audioBlob){
+        log("Trình duyệt hiện tại không có OGG encoder. Đã dừng để tránh xuất nhầm định dạng.", "err");
+        setBusy(false); return false;
+      }
+    } else {
+      log(`${exportFormat.toUpperCase()} cần bộ mã hoá ngoài (FLAC/M4A không có encoder chuẩn trong Web Audio). Phiên bản này chưa xuất giả dạng định dạng khác.`, "err");
+      setBusy(false); return false;
+    }
+    await saveOutput(audioBlob, `${baseName}.${extension}`);
+    await saveOutput(new Blob([buildTracklistText(infos, baseName)], { type: "text/plain" }), `${baseName}_tracklist.txt`);
+    await saveOutput(new Blob([buildYoutubeTimestamps(infos)], { type: "text/plain" }), `${baseName}_youtube_timestamps.txt`);
+    await saveOutput(new Blob([buildSRT(infos)], { type: "text/plain" }), `${baseName}.srt`);
+
+    log(`✅ Hoàn tất "${baseName}"! Tổng thời lượng: ${formatTime(finalLeft.length / sr)}`, "ok");
+    setBusy(false);
+    return true;
+  }
+
+  function addToExportQueue(){
+    const list = currentPlaylist();
+    if (!list.length){ log("Playlist đang trống — không có gì để thêm vào hàng đợi.", "err"); return; }
+    const name = $("playlistNameInput").value.trim() || `Playlist_${state.exportQueue.length + 1}`;
+    state.exportQueue.push({
+      name,
+      tracks: list.slice(),
+      artist: $("exportArtist")?.value.trim() || "",
+      remixer: $("exportRemixer")?.value.trim() || "",
+      format: $("exportFormat")?.value || "wav",
+      bitrate: Number($("exportBitrate")?.value || 320)
+    });
+    for (const t of list) if (t?.id && !state.dedupeHistory.includes(t.id)) state.dedupeHistory.push(t.id);
+    renderExportQueue();
+    scheduleMusicLibrarySave();
+    log(`Đã thêm "${name}" (${list.length} bài) vào hàng đợi xuất.`, "ok");
+  }
+
+  async function exportAllQueue(){
+    if (!state.exportQueue.length){ log("Hàng đợi xuất đang trống.", "err"); return; }
+    const queue = state.exportQueue.slice();
+    log(`Bắt đầu xuất ${queue.length} playlist trong hàng đợi...`);
+    for (const item of queue){
+      const oldFmt=$("exportFormat").value, oldBit=$("exportBitrate").value, oldArtist=$("exportArtist").value, oldRemix=$("exportRemixer").value;
+      $("exportFormat").value=item.format||oldFmt;
+      $("exportBitrate").value=String(item.bitrate||oldBit);
+      $("exportArtist").value=item.artist??oldArtist;
+      $("exportRemixer").value=item.remixer??oldRemix;
+      await mergeMix(item.name, item.tracks);
+      $("exportFormat").value=oldFmt; $("exportBitrate").value=oldBit; $("exportArtist").value=oldArtist; $("exportRemixer").value=oldRemix;
+    }
+    state.exportQueue = [];
+    renderExportQueue();
+    log(`✅ Đã xuất xong toàn bộ hàng đợi.`, "ok");
+  }
+
+  // ---------- playlist preview ----------
+  async function previewPlaylist(){
+    const list = currentPlaylist().slice();
+    if (!list.length){ log("Playlist đang trống — chưa có gì để nghe trước.", "err"); return; }
+    const generation = ++playlistPreviewGeneration;
+    stopPreview();
+    playlistPreviewMode = true;
+    const pp = $("previewPlaylistBtn");
+    const sp = $("stopPlaylistPreviewBtn");
+    if (pp) pp.textContent = "⏳ ĐANG TẠO PREVIEW...";
+    if (sp) sp.disabled = false;
+    log(`Tạo preview toàn bộ playlist — ${list.length} bài...`);
+
+    let ctx;
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 }); }
+    catch(e){ ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+    const sr = ctx.sampleRate;
+    const chunks = [];
+
+    try{
+      for (let i=0; i<list.length; i++){
+        if (generation !== playlistPreviewGeneration || !playlistPreviewMode) throw new Error("Preview đã được dừng.");
+        const tr = list[i];
+        if (pp) pp.textContent = `⏳ ${i+1}/${list.length}`;
+        const audioBuf = await ctx.decodeAudioData((await tr.file.arrayBuffer()).slice(0));
+        let l, r;
+        if ($("cutSilence").checked){
+          const trimmed = trimSilence(audioBuf);
+          l = Float32Array.from(trimmed.left);
+          r = Float32Array.from(trimmed.right);
+        } else {
+          l = Float32Array.from(audioBuf.getChannelData(0));
+          r = audioBuf.numberOfChannels > 1 ? Float32Array.from(audioBuf.getChannelData(1)) : Float32Array.from(audioBuf.getChannelData(0));
+        }
+        applyEdgeDeclick(l, sr); applyEdgeDeclick(r, sr);
+        if ($("edgeNoiseCut")?.checked){
+          applyEdgeNoiseCut(l, sr, 0.12); applyEdgeNoiseCut(r, sr, 0.12);
+        }
+        chunks.push({left:l,right:r});
+      }
+
+      if ($("normalizeVolume").checked && chunks.length > 1){
+        const rmsList = chunks.map(c => computeRMS(c.left,c.right));
+        const sorted = rmsList.slice().sort((a,b)=>a-b);
+        const mid=Math.floor(sorted.length/2);
+        const target=sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+        if (target > 0) chunks.forEach((c,i)=>{
+          if (rmsList[i] <= 0) return;
+          const gain=Math.max(0.4,Math.min(2.5,target/rmsList[i]));
+          for(let j=0;j<c.left.length;j++){c.left[j]*=gain;c.right[j]*=gain;}
+        });
+      }
+
+      if ($("presenceEnhance")?.checked){
+        const amount=(parseFloat($("presenceIntensity")?.value)||0)/100;
+        if(amount>0) chunks.forEach(c=>applyPresenceStereo(c.left,c.right,sr,amount));
+      }
+
+      const cf=$("crossfade").checked ? (parseFloat($("crossfadeSec").value)||0) : 0;
+      const mixed=buildMixWithCrossfade(chunks,sr,cf);
+      const left=Float32Array.from(mixed.left), right=Float32Array.from(mixed.right);
+
+      if ($("fadeIn").checked){
+        const sec=parseFloat($("fadeInSec").value)||0;
+        applyMasterFade(left,sr,sec,"in"); applyMasterFade(right,sr,sec,"in");
+      }
+      if ($("fadeOut").checked){
+        const sec=parseFloat($("fadeOutSec").value)||0;
+        applyMasterFade(left,sr,sec,"out"); applyMasterFade(right,sr,sec,"out");
+      }
+      if ($("eightD").checked){
+        apply8D(left,right,sr,{
+          period:parseFloat($("eightDPeriod").value)||9,
+          intensity:(parseFloat($("eightDIntensity").value)||0)/100,
+          width:(parseFloat($("eightDWidth").value)||100)/100,
+          depth:(parseFloat($("eightDDepth").value)||0)/100,
+          keepBass:$("eightDKeepBass").checked,
+          keepVocal:$("eightDKeepVocal").checked,
+          binaural:$("eightDBinaural").checked
+        });
+      }
+
+      if (generation !== playlistPreviewGeneration || !playlistPreviewMode) return;
+      const blob=encodeWAV(left,right,sr,{title:"Playlist Preview"});
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl=URL.createObjectURL(blob);
+      previewAudioEl.src=previewUrl;
+      previewTrackId=null;
+      previewState="playing";
+      previewAudioEl.onended=()=>{
+        playlistPreviewMode=false; previewState="stopped";
+        if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
+        if(pp) pp.textContent="▶ NGHE TRƯỚC LIST";
+        if(sp) sp.disabled=true;
+        renderPool(); renderPlaylist();
+      };
+      const seekBox=$("playlistPreviewSeek"), seekRange=$("playlistPreviewRange");
+      if(seekBox) seekBox.style.display="block";
+      if(seekRange){ seekRange.disabled=false; seekRange.max=String(left.length/sr); seekRange.value=0; }
+      if($("playlistPreviewTotal")) $("playlistPreviewTotal").textContent=formatTime(left.length/sr);
+      if($("playlistPreviewCurrent")) $("playlistPreviewCurrent").textContent="00:00";
+      await previewAudioEl.play();
+      if(pp) pp.textContent="⏸ TẠM DỪNG LIST";
+      log(`▶ Đang nghe trước playlist (${formatTime(left.length/sr)}).`, "ok");
+    }catch(e){
+      if (e?.message !== "Preview đã được dừng.") log("Không tạo được preview playlist: " + e.message, "err");
+      if (generation === playlistPreviewGeneration){
+        playlistPreviewMode=false; previewState="stopped";
+        if(pp) pp.textContent="▶ NGHE TRƯỚC LIST";
+        if(sp) sp.disabled=true;
+      }
+    }finally{
+      try{ await ctx.close(); }catch{}
+    }
+  }
+
+  function togglePlaylistPreview(){
+    if (playlistPreviewMode && previewState === "playing"){
+      previewAudioEl.pause(); previewState="paused";
+      const pp=$("previewPlaylistBtn"); if(pp) pp.textContent="▶ TIẾP TỤC LIST";
+      return;
+    }
+    if (playlistPreviewMode && previewState === "paused"){
+      previewAudioEl.play().catch(()=>{});
+      previewState="playing";
+      const pp=$("previewPlaylistBtn"); if(pp) pp.textContent="⏸ TẠM DỪNG LIST";
+      return;
+    }
+    previewPlaylist();
+  }
+
+  function stopPlaylistPreview(){
+    playlistPreviewGeneration++;
+    playlistPreviewMode=false;
+    stopPreview();
+  }
+
+  // ---------- thanh chọn vị trí nghe trước ----------
+  previewAudioEl.addEventListener("timeupdate", ()=>{
+    if(!playlistPreviewMode || playlistPreviewSeeking) return;
+    const range=$("playlistPreviewRange");
+    if(range) range.value=String(previewAudioEl.currentTime||0);
+    const cur=$("playlistPreviewCurrent");
+    if(cur) cur.textContent=formatTime(previewAudioEl.currentTime||0);
+  });
+  previewAudioEl.addEventListener("loadedmetadata", ()=>{
+    if(!playlistPreviewMode) return;
+    const range=$("playlistPreviewRange");
+    if(range){ range.max=String(previewAudioEl.duration||0); range.disabled=false; }
+    if($("playlistPreviewTotal")) $("playlistPreviewTotal").textContent=formatTime(previewAudioEl.duration||0);
+  });
+  $("playlistPreviewRange").addEventListener("input", e=>{
+    playlistPreviewSeeking=true;
+    const t=parseFloat(e.target.value)||0;
+    previewAudioEl.currentTime=t;
+    if($("playlistPreviewCurrent")) $("playlistPreviewCurrent").textContent=formatTime(t);
+  });
+  $("playlistPreviewRange").addEventListener("change", ()=>{ playlistPreviewSeeking=false; });
+  $("playlistPreviewRange").addEventListener("pointerup", ()=>{ playlistPreviewSeeking=false; });
+
+  // ---------- wiring ----------
+
+  $("tabRemix").addEventListener("click", () => setPartition("Remix"));
+  $("tabLofi").addEventListener("click", () => setPartition("Lofi"));
+  $("themeToggle").addEventListener("change", e => applyTheme(e.target.checked ? "light" : "dark"));
+  $("shufflePlaylistBtn").addEventListener("click", shufflePlaylistOrder);
+  $("sortPlaylistBtn").addEventListener("click", sortPlaylistByTitle);
+  $("dedupePlaylistBtn").addEventListener("click", removePlaylistDuplicates);
+  $("downloadTracklistBtn").addEventListener("click", downloadCurrentTracklist);
+  $("clearPlaylistBtn").addEventListener("click", clearCurrentPlaylist);
+
+  $("randomBtn").addEventListener("click", randomizeList);
+  $("replaceBtn").addEventListener("click", () => {
+    if (state.selectedPlaylistIndex == null){ log("Chọn 1 vị trí trong PLAYLIST trước.", "err"); return; }
+    doReplace(state.selectedPlaylistIndex);
+  });
+  $("mergeBtn").addEventListener("click", () => mergeMix($("playlistNameInput").value, null));
+  $("clearPoolBtn").addEventListener("click", clearPool);
+  $("addQueueBtn").addEventListener("click", addToExportQueue);
+  $("exportAllBtn").addEventListener("click", exportAllQueue);
+  $("playlistNameInput")?.addEventListener("input", () => { try { scheduleMusicLibrarySave(); } catch(e) {} });
+
+  $("addFilesBtn").addEventListener("click", () => $("fileInput").click());
+  $("fileInput").addEventListener("change", (e) => {
+    addFilesToPool(Array.from(e.target.files));
+    e.target.value = "";
+  });
+  $("addFolderBtn").addEventListener("click", () => $("folderInput").click());
+  $("folderInput").addEventListener("change", (e) => {
+    addFilesToPool(Array.from(e.target.files));
+    e.target.value = "";
+  });
+
+  $("poolSearch").addEventListener("input", (e) => {
+    state.poolSearch = e.target.value;
+    renderPool();
+  });
+  $("poolSort").addEventListener("change", (e) => {
+    sortPool(e.target.value);
+  });
+
+  $("chooseOutputBtn").addEventListener("click", async () => {
+    if (!window.showDirectoryPicker){
+      log("Trình duyệt này không hỗ trợ chọn thư mục — file sẽ tải về thư mục Downloads mặc định. (Dùng Chrome/Edge để chọn thư mục.)", "err");
+      return;
+    }
+    if (pendingDirHandle){
+      try{
+        const perm = await pendingDirHandle.requestPermission({ mode: "readwrite" });
+        if (perm === "granted"){
+          dirHandle = pendingDirHandle;
+          pendingDirHandle = null;
+          $("chooseOutputBtn").textContent = "📁 Thư mục xuất";
+          updateOutputDirLabel(dirHandle.name);
+          log(`Đã xác nhận dùng lại thư mục: ${dirHandle.name}`, "ok");
+        } else {
+          log("Bạn chưa cấp quyền — chọn lại thư mục xuất bên dưới nếu muốn.", "err");
+        }
+      } catch(e){ log("Không xác nhận được quyền: " + e.message, "err"); }
+      return;
+    }
+    try{
+      dirHandle = await window.showDirectoryPicker();
+      updateOutputDirLabel(dirHandle.name);
+      log(`Đã chọn thư mục xuất: ${dirHandle.name}`, "ok");
+      await idbSet("outputDir", dirHandle);
+    } catch(e){ /* user cancelled */ }
+  });
+
+  playlistListEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === "preview" || action === "stopPreview"){
+      const id = btn.dataset.id;
+      const track = currentPlaylist().find(t => t.id === id);
+      if (!track) return;
+      if (action === "preview") togglePreview(track); else stopPreview();
+      return;
+    }
+    const i = parseInt(btn.dataset.i, 10);
+    if (action === "up") moveItem(i, -1);
+    else if (action === "down") moveItem(i, 1);
+    else if (action === "remove") removeAt(i);
+  });
+
+  poolListEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === "preview" || action === "stopPreview"){
+      const id = btn.dataset.id;
+      const track = state.partitions[state.activePartition].find(t => t.id === id);
+      if (!track) return;
+      if (action === "preview") togglePreview(track); else stopPreview();
+      return;
+    }
+    if (action === "pin"){ togglePin(btn.dataset.id); return; }
+    if (action === "addPlaylist"){
+      const track = state.partitions[state.activePartition].find(t => t.id === btn.dataset.id);
+      if (track) addTrackToPlaylist(track);
+      return;
+    }
+    if (action === "rename"){ renameTrack(btn.dataset.id); return; }
+    if (action === "metadata"){ openMetadataEditor(btn.dataset.id); return; }
+    if (action === "remove"){ removeFromPool(btn.dataset.id); return; }
+  });
+
+
+  poolListEl.addEventListener("dragstart", e => {
+    const row=e.target.closest(".track");
+    if(!row) return;
+    const id=row.querySelector('[data-action="addPlaylist"]')?.dataset.id;
+    if(id){
+      e.dataTransfer.setData("text/plain", "pmb-track:" + id);
+      e.dataTransfer.effectAllowed="copy";
+    }
+  });
+
+  // Allow dropping audio files directly anywhere inside KHO NGUỒN, not only the dashed box.
+  [poolListEl, document.querySelector('.panel')].forEach(target => {
+    if(!target) return;
+    target.addEventListener("dragover", e => {
+      if(e.dataTransfer?.files?.length){ e.preventDefault(); e.dataTransfer.dropEffect="copy"; target.classList.add("file-drop-active"); }
+    });
+    target.addEventListener("dragleave", e => {
+      if(!target.contains(e.relatedTarget)) target.classList.remove("file-drop-active");
+    });
+    target.addEventListener("drop", async e => {
+      if(!e.dataTransfer?.files?.length) return;
+      e.preventDefault(); e.stopPropagation(); target.classList.remove("file-drop-active");
+      const files = await filesFromDrop(e.dataTransfer);
+      addFilesToPool(files);
+    });
+  });
+  playlistListEl.addEventListener("dragover", e => {
+    if(e.dataTransfer.types.includes("text/plain")){
+      e.preventDefault(); playlistListEl.classList.add("playlist-drop-active");
+    }
+  });
+  playlistListEl.addEventListener("dragleave", e => {
+    if(e.target===playlistListEl) playlistListEl.classList.remove("playlist-drop-active");
+  });
+  playlistListEl.addEventListener("drop", e => {
+    e.preventDefault(); playlistListEl.classList.remove("playlist-drop-active");
+    const raw=e.dataTransfer.getData("text/plain");
+    const id=raw.startsWith("pmb-track:") ? raw.slice(10) : raw;
+    if(!id) return;
+    const track=state.partitions[state.activePartition].find(t=>t.id===id);
+    if(track) addTrackToPlaylist(track);
+  });
+
+  exportQueueBox.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action=qremove]");
+    if (!btn) return;
+    const i = parseInt(btn.dataset.i, 10);
+    state.exportQueue.splice(i, 1);
+    renderExportQueue();
+  });
+
+  const dropzone = $("dropzone");
+  ["dragenter","dragover"].forEach(ev => {
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("drag"); });
+  });
+  ["dragleave","drop"].forEach(ev => {
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove("drag"); });
+  });
+  dropzone.addEventListener("drop", async (e) => {
+    const files = await filesFromDrop(e.dataTransfer);
+    addFilesToPool(files);
+  });
+
+  // Metadata modal is declared after this script in the HTML, so wire it only
+  // after the DOM has finished parsing. This prevents a null-element error from
+  // stopping the rest of the app initialization.
+  function wireMetadataEditor(){
+    const modal = $("metadataModal");
+    const closeBtn = $("closeMetadataBtn");
+    const cancelBtn = $("cancelMetadataBtn");
+    const saveBtn = $("saveMetadataBtn");
+    const removeBtn = $("removeCoverBtn");
+    const coverInput = $("metaCover");
+    if (!modal || !closeBtn || !cancelBtn || !saveBtn || !removeBtn || !coverInput) return;
+    if (modal.dataset.wired === "1") return;
+    modal.dataset.wired = "1";
+
+    closeBtn.addEventListener("click", closeMetadataEditor);
+    cancelBtn.addEventListener("click", closeMetadataEditor);
+    saveBtn.addEventListener("click", saveMetadataEditor);
+    removeBtn.addEventListener("click", ()=>{
+      const id=state.editingTrackId;
+      const tr=state.partitions[state.activePartition].find(t=>t.id===id);
+      if(tr){
+        tr.cover=null;
+        coverInput.value="";
+        const img=$("metaCoverPreview");
+        if(img){
+          if(img.src?.startsWith("blob:")) URL.revokeObjectURL(img.src);
+          img.removeAttribute("src");
+          img.style.display="none";
+        }
+      }
+    });
+    coverInput.addEventListener("change", ()=>{
+      const f=coverInput.files?.[0], img=$("metaCoverPreview");
+      if(f && img){
+        if(img.src?.startsWith("blob:")) URL.revokeObjectURL(img.src);
+        img.src=URL.createObjectURL(f);
+        img.style.display="block";
+      }
+    });
+    modal.addEventListener("click", e=>{
+      if(e.target===modal) closeMetadataEditor();
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireMetadataEditor, {once:true});
+  else wireMetadataEditor();
+
+  function saveExportUiSettings(){
+    state.exportSettings={
+      format:$("exportFormat").value,
+      bitrate:Number($("exportBitrate").value),
+      artist:$("exportArtist").value,
+      remixer:$("exportRemixer").value,
+      filePattern:$("exportFilePattern").value
+    };
+    try{localStorage.setItem("pmb-export-settings",JSON.stringify(state.exportSettings));}catch{}
+    try { scheduleMusicLibrarySave(); } catch(e) {}
+    const f=state.exportSettings.format;
+    $("formatHint").textContent = f==="wav" ? "WAV không nén; bitrate không áp dụng." :
+      f==="mp3" ? "MP3 dùng WebCodecs/MediaRecorder nếu trình duyệt có bộ mã hoá MP3; bitrate áp dụng." :
+      f==="ogg" ? "OGG dùng MediaRecorder nếu trình duyệt có OGG encoder; bitrate áp dụng." :
+      "FLAC/M4A cần encoder chuyên dụng; app sẽ không giả dạng thành định dạng khác.";
+  }
+  try{
+    const ex=JSON.parse(localStorage.getItem("pmb-export-settings")||"null");
+    if(ex){
+      Object.assign(state.exportSettings,ex);
+      $("exportFormat").value=ex.format||"wav"; $("exportBitrate").value=String(ex.bitrate||320);
+      $("exportArtist").value=ex.artist||""; $("exportRemixer").value=ex.remixer||"";
+      $("exportFilePattern").value=ex.filePattern||"{playlist}";
+    }
+  }catch{}
+  $("exportFormat").addEventListener("change",saveExportUiSettings);
+  $("exportBitrate").addEventListener("change",saveExportUiSettings);
+  $("exportArtist").addEventListener("input",saveExportUiSettings);
+  $("exportRemixer").addEventListener("input",saveExportUiSettings);
+  $("exportFilePattern").addEventListener("input",saveExportUiSettings);
+  $("dedupeMode").addEventListener("change",()=>{
+    try{localStorage.setItem("pmb-dedupe-mode",$("dedupeMode").value)}catch{}
+    renderPool(); renderPlaylist();
+  });
+  $("resetDedupeBtn").addEventListener("click",resetDedupeHistory);
+  try{$("dedupeMode").value=localStorage.getItem("pmb-dedupe-mode")||"strict";}catch{}
+
+  $("cutSilence").addEventListener("change", saveSettings);
+  $("normalizeVolume").addEventListener("change", saveSettings);
+  $("eightD").addEventListener("change", () => {
+    $("eightDParams").style.display = $("eightD").checked ? "inline-flex" : "none";
+    saveSettings();
+  });
+  $("eightDPeriod").addEventListener("change", saveSettings);
+  $("eightDIntensity").addEventListener("input", () => {
+    $("eightDIntensityLabel").textContent = $("eightDIntensity").value + "%";
+    saveSettings();
+  });
+  $("eightDWidth").addEventListener("input", () => {
+    $("eightDWidthLabel").textContent = $("eightDWidth").value + "%";
+    saveSettings();
+  });
+  $("eightDDepth").addEventListener("input", () => {
+    $("eightDDepthLabel").textContent = $("eightDDepth").value + "%";
+    saveSettings();
+  });
+  $("eightDKeepBass").addEventListener("change", saveSettings);
+  $("eightDKeepVocal").addEventListener("change", saveSettings);
+  $("eightDBinaural").addEventListener("change", saveSettings);
+  $("fadeIn").addEventListener("change", saveSettings);
+  $("fadeInSec").addEventListener("change", saveSettings);
+  $("fadeOut").addEventListener("change", saveSettings);
+  $("fadeOutSec").addEventListener("change", saveSettings);
+  $("crossfade").addEventListener("change", saveSettings);
+  $("crossfadeSec").addEventListener("change", saveSettings);
+  $("presenceEnhance").addEventListener("change", saveSettings);
+  $("presenceIntensity").addEventListener("input", () => {
+    $("presenceIntensityLabel").textContent = $("presenceIntensity").value + "%";
+    saveSettings();
+  });
+  $("edgeNoiseCut").addEventListener("change", saveSettings);
+  $("previewPlaylistBtn").addEventListener("click", togglePlaylistPreview);
+  $("stopPlaylistPreviewBtn").addEventListener("click", stopPlaylistPreview);
+  $("randomCount").addEventListener("change", saveSettings);
+  $("tabRemix").addEventListener("click", saveSettings);
+  $("tabLofi").addEventListener("click", saveSettings);
+
+  restoreSettings();
+  renderPool();
+  renderPlaylist();
+  renderExportQueue();
+  restoreOutputDir();
+  // Restore the persistent music library automatically on every launch.
+    $("remixPoolSelect")?.addEventListener("change", e => {
+    state.activeRemixPoolId = e.target.value;
+    state.selectedSourceId = null; state.selectedPlaylistIndex = null;
+    renderRemixPools(); renderPool(); scheduleMusicLibrarySave();
+  });
+  $("addRemixPoolBtn")?.addEventListener("click", addRemixPool);
+  $("renameRemixPoolBtn")?.addEventListener("click", renameRemixPool);
+  $("deleteRemixPoolBtn")?.addEventListener("click", deleteRemixPool);
+
+restoreMusicLibrary();
+
+  log("Sẵn sàng. Thư viện nhạc sẽ tự lưu trên trình duyệt khi bạn thêm file.");
+})();
+
+  // ---------- lightweight project metadata: data.js ----------
+  let projectDirHandle = null;
+  let projectAutoSaveTimer = null;
+
+  function getTrackPathInfo(track){
+    return {
+      path: track.file?.webkitRelativePath || track.webkitRelativePath || null,
+      name: track.name || track.file?.name || "",
+      size: Number(track.file?.size || 0),
+      type: track.file?.type || "",
+      lastModified: Number(track.file?.lastModified || 0)
+    };
+  }
+
+  function projectSnapshot(){
+    const settings = {
+      cutSilence: $("cutSilence")?.checked ?? false,
+      normalizeVolume: $("normalizeVolume")?.checked ?? false,
+      eightD: $("eightD")?.checked ?? false,
+      eightDPeriod: $("eightDPeriod")?.value ?? "",
+      eightDIntensity: $("eightDIntensity")?.value ?? "",
+      eightDWidth: $("eightDWidth")?.value ?? "",
+      eightDDepth: $("eightDDepth")?.value ?? "",
+      eightDKeepBass: $("eightDKeepBass")?.checked ?? false,
+      eightDKeepVocal: $("eightDKeepVocal")?.checked ?? false,
+      eightDBinaural: $("eightDBinaural")?.checked ?? false,
+      fadeIn: $("fadeIn")?.checked ?? false,
+      fadeInSec: $("fadeInSec")?.value ?? "",
+      fadeOut: $("fadeOut")?.checked ?? false,
+      fadeOutSec: $("fadeOutSec")?.value ?? "",
+      crossfade: $("crossfade")?.checked ?? false,
+      crossfadeSec: $("crossfadeSec")?.value ?? "",
+      presenceEnhance: $("presenceEnhance")?.checked ?? false,
+      presenceIntensity: $("presenceIntensity")?.value ?? "",
+      edgeNoiseCut: $("edgeNoiseCut")?.checked ?? false,
+      randomCount: $("randomCount")?.value ?? "",
+      activePartition: state.activePartition
+    };
+
+    const tracks = {};
+    for (const partition of ["Remix","Lofi"]){
+      tracks[partition] = state.partitions[partition].map((t, index) => ({
+        id: t.id,
+        index,
+        name: t.name,
+        duration: t.duration ?? null,
+        addedAt: t.addedAt || null,
+        file: getTrackPathInfo(t)
+      }));
+    }
+
+    return {
+      schema: "PlaylistMixBuilder.project.v1",
+      savedAt: new Date().toISOString(),
+      app: "Playlist Mix Builder",
+      tracks,
+      partitionPlaylist: {
+        Remix: state.partitionPlaylist.Remix.map(t => t?.id).filter(Boolean),
+        Lofi: state.partitionPlaylist.Lofi.map(t => t?.id).filter(Boolean)
+      },
+      pinned: state.pinned,
+      selectedSourceId: state.selectedSourceId,
+      exportQueue: state.exportQueue,
+      settings
+    };
+  }
+
+  function makeDataJsText(){
+    const payload = JSON.stringify(projectSnapshot(), null, 2);
+    return `/* Playlist Mix Builder project data - metadata only. Audio files are NOT embedded. */\nwindow.PMB_PROJECT_DATA = ${payload};\n`;
+  }
+
+  function downloadDataJs(){
+    const blob = new Blob([makeDataJsText()], {type:"text/javascript;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "data.js";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+    log("Đã tạo data.js (chỉ metadata, không chứa file nhạc).", "ok");
+  }
+
+  async function chooseProjectFolder(){
+    if (!window.showDirectoryPicker){
+      log("Trình duyệt này không hỗ trợ chọn thư mục để tự ghi data.js. Dùng nút 'Lưu data.js' để tải file xuống.", "err");
+      downloadDataJs();
+      return;
+    }
+    try{
+      projectDirHandle = await window.showDirectoryPicker({mode:"readwrite"});
+      await idbSet("projectDirHandle", projectDirHandle);
+      await writeProjectDataJs();
+      log(`Đã chọn thư mục dự án: ${projectDirHandle.name}. data.js sẽ được cập nhật khi dữ liệu thay đổi.`, "ok");
+    }catch(e){
+      if (e?.name !== "AbortError") log("Không chọn được thư mục dự án: " + e.message, "err");
+    }
+  }
+
+  async function writeProjectDataJs(){
+    if (!projectDirHandle) return;
+    try{
+      const handle = await projectDirHandle.getFileHandle("data.js", {create:true});
+      const writable = await handle.createWritable();
+      await writable.write(makeDataJsText());
+      await writable.close();
+      log("Đã tự cập nhật data.js.", "ok");
+    }catch(e){
+      log("Không thể ghi data.js: " + e.message, "err");
+    }
+  }
+
+  function scheduleProjectDataSave(){
+    clearTimeout(projectAutoSaveTimer);
+    projectAutoSaveTimer = setTimeout(() => writeProjectDataJs(), 300);
+  }
+
+  async function loadDataJsFile(file){
+    try{
+      const text = await file.text();
+      // Accept data.js generated by this app only.
+      const match = text.match(/window\.PMB_PROJECT_DATA\s*=\s*([\s\S]*?);\s*$/);
+      if (!match) throw new Error("Không tìm thấy PMB_PROJECT_DATA trong data.js.");
+      const data = JSON.parse(match[1]);
+
+      // Restore metadata into the visible project state where possible.
+      if (data.settings){
+        localStorage.setItem("pmb-settings", JSON.stringify(data.settings));
+        restoreSettings();
+      }
+      if (Array.isArray(data.exportQueue)) state.exportQueue = data.exportQueue;
+      if (data.pinned) state.pinned = data.pinned;
+      if (data.selectedSourceId) state.selectedSourceId = data.selectedSourceId;
+
+      // IMPORTANT: metadata does not contain audio bytes, so existing browser File objects
+      // are never destroyed/replaced. We only report what data.js remembers.
+      const count = ["Remix","Lofi"].reduce((n,p)=>n + (Array.isArray(data.tracks?.[p]) ? data.tracks[p].length : 0), 0);
+      log(`Đã nạp data.js: ${count} thông tin file. File âm thanh phải được chọn lại nếu chưa có trong phiên hiện tại.`, "ok");
+      renderPool();
+      renderPlaylist();
+    }catch(e){
+      log("Không nạp được data.js: " + e.message, "err");
+    }
+  }
+
+  async function restoreProjectFolderAndDataJs(){
+    try{
+      const handle = await idbGet("projectDirHandle");
+      if (!handle) return;
+      const perm = await handle.queryPermission?.({mode:"readwrite"});
+      if (perm !== "granted") return;
+      projectDirHandle = handle;
+      const fileHandle = await handle.getFileHandle("data.js", {create:false});
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      const match = text.match(/window\.PMB_PROJECT_DATA\s*=\s*([\s\S]*?);\s*$/);
+      if (!match) return;
+      const data = JSON.parse(match[1]);
+      // data.js restores project metadata/settings; audio bytes come from IndexedDB.
+      if (data.settings){
+        localStorage.setItem("pmb-settings", JSON.stringify(data.settings));
+        restoreSettings();
+      }
+      if (data.partitionPlaylist){
+        const byId = new Map([...state.partitions.Remix, ...state.partitions.Lofi].map(t => [t.id,t]));
+        for (const p of ["Remix","Lofi"]){
+          const ids = Array.isArray(data.partitionPlaylist[p]) ? data.partitionPlaylist[p] : [];
+          state.partitionPlaylist[p] = ids.map(id => byId.get(id)).filter(Boolean);
+        }
+      }
+      if ("pinned" in data) state.pinned = data.pinned;
+      if ("selectedSourceId" in data) state.selectedSourceId = data.selectedSourceId;
+      if (Array.isArray(data.exportQueue)){
+        const byId = new Map([...state.partitions.Remix, ...state.partitions.Lofi].map(t => [t.id,t]));
+        state.exportQueue = data.exportQueue.map(q => ({...q, tracks:(q.tracks||[]).map(t => byId.get(t?.id)||t).filter(Boolean)}));
+      }
+      renderPool(); renderPlaylist(); renderExportQueue();
+      log(`Đã tự động nạp data.js cũ từ thư mục dự án: ${handle.name}`, "ok");
+    }catch(e){
+      // First launch / permission not granted / missing data.js: do not interrupt the app.
+      console.debug("Auto data.js restore skipped:", e);
+    }
+  }
+
+  // Hook project metadata autosave into common state-changing operations.
+  const _scheduleMusicLibrarySave = scheduleMusicLibrarySave;
+  scheduleMusicLibrarySave = function(){
+    _scheduleMusicLibrarySave();
+    scheduleProjectDataSave();
+  };
+
+  $("chooseProjectBtn")?.addEventListener("click", chooseProjectFolder);
+  $("saveDataJsBtn")?.addEventListener("click", downloadDataJs);
+  $("loadDataJsBtn")?.addEventListener("click", () => $("dataJsInput")?.click());
+  $("dataJsInput")?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (file) loadDataJsFile(file);
+    e.target.value = "";
+  });
+
+  // Also save settings changes into data.js when a project folder is active.
+  const _saveSettings = saveSettings;
+  saveSettings = function(){
+    _saveSettings();
+    scheduleProjectDataSave();
+  };
+
+</script>
+
+<script>
+/* ============================================================
+   PlaylistMixBuilder — lightweight data.js project storage
+   - data.js stores metadata only; NEVER stores audio blobs.
+   - New tracks are appended to existing project data.
+   - Relative paths are stored when the browser provides them.
+   ============================================================ */
+(() => {
+  const DATA_JS_FILENAME = "data.js";
+  let projectDirHandle = null;
+  let dataJsWriteTimer = null;
+
+  const $ = id => document.getElementById(id);
+
+  function trackMeta(t) {
+    const f = t && t.file;
+    return {
+      id: t?.id ?? null,
+      name: t?.name ?? f?.name ?? "",
+      size: Number(f?.size ?? t?.size ?? 0),
+      type: f?.type ?? t?.type ?? "",
+      lastModified: Number(f?.lastModified ?? t?.lastModified ?? 0),
+      relativePath: f?.webkitRelativePath || t?.relativePath || null,
+      duration: Number.isFinite(t?.duration) ? t.duration : null,
+      addedAt: t?.addedAt ?? null
+    };
+  }
+
+  function currentSnapshot() {
+    const p = window.state?.partitions || {};
+    return {
+      schema: 2,
+      app: "PlaylistMixBuilder",
+      savedAt: new Date().toISOString(),
+      note: "Metadata only. Audio files are not embedded in data.js.",
+      tracks: {
+        Remix: Array.isArray(p.Remix) ? p.Remix.map(trackMeta) : [],
+        Lofi: Array.isArray(p.Lofi) ? p.Lofi.map(trackMeta) : []
+      },
+      playlists: window.state?.playlists || [],
+      pinned: window.state?.pinned ?? null,
+      selectedSourceId: window.state?.selectedSourceId ?? null,
+      exportQueue: window.state?.exportQueue || [],
+      settings: window.state?.settings || {}
+    };
+  }
+
+  function makeDataJs() {
+    return `/* PlaylistMixBuilder project data — metadata only */
+window.PMB_PROJECT_DATA = ${JSON.stringify(currentSnapshot(), null, 2)};
+`;
+  }
+
+  function setStatus(msg) {
+    const el = $("dataJsStatus");
+    if (el) el.textContent = "data.js: " + msg;
+  }
+
+  async function writeDataJs() {
+    if (!projectDirHandle) {
+      setStatus("chưa chọn thư mục dự án");
+      return false;
+    }
+    try {
+      const perm = await projectDirHandle.requestPermission?.({mode:"readwrite"});
+      if (perm && perm !== "granted") {
+        setStatus("chưa được cấp quyền ghi");
+        return false;
+      }
+      const fileHandle = await projectDirHandle.getFileHandle(DATA_JS_FILENAME, {create:true});
+      const writable = await fileHandle.createWritable();
+      await writable.write(makeDataJs());
+      await writable.close();
+      setStatus("đã cập nhật");
+      return true;
+    } catch (err) {
+      console.error("data.js write error:", err);
+      setStatus("lỗi ghi file");
+      return false;
+    }
+  }
+
+  async function chooseProjectFolder() {
+    if (!window.showDirectoryPicker) {
+      alert("Trình duyệt này không hỗ trợ tự ghi data.js. Hãy dùng Chrome hoặc Edge trên máy tính.");
+      return;
+    }
+    try {
+      projectDirHandle = await window.showDirectoryPicker({mode:"readwrite"});
+      await writeDataJs();
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        console.error(err);
+        setStatus("không chọn được thư mục");
+      }
+    }
+  }
+
+  function scheduleWrite() {
+    clearTimeout(dataJsWriteTimer);
+    dataJsWriteTimer = setTimeout(() => {
+      if (projectDirHandle) writeDataJs();
+    }, 700);
+  }
+
+  function downloadDataJs() {
+    const blob = new Blob([makeDataJs()], {type:"text/javascript;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = DATA_JS_FILENAME;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setStatus("đã tải xuống");
+  }
+
+  function applyLoadedData(data) {
+    if (!data || typeof data !== "object") throw new Error("data.js không hợp lệ");
+
+    // Restore only lightweight project state. Audio files themselves remain
+    // on the user's disk and are not recreated from metadata.
+    if (window.state) {
+      if (data.playlists) window.state.playlists = data.playlists;
+      if ("pinned" in data) window.state.pinned = data.pinned;
+      if ("selectedSourceId" in data) window.state.selectedSourceId = data.selectedSourceId;
+      if (data.exportQueue) window.state.exportQueue = data.exportQueue;
+      if (data.settings) window.state.settings = data.settings;
+    }
+
+    // Keep a visible reference for the UI/debugging.
+    window.PMB_LOADED_PROJECT_DATA = data;
+    setStatus("đã nạp metadata");
+    if (typeof window.render === "function") window.render();
+  }
+
+  async function loadDataJsFile(file) {
+    const txt = await file.text();
+    const m = txt.match(/window\.PMB_PROJECT_DATA\s*=\s*([\s\S]*?);\s*$/m);
+    if (!m) throw new Error("Không tìm thấy PMB_PROJECT_DATA trong data.js");
+    const data = JSON.parse(m[1]);
+    applyLoadedData(data);
+  }
+
+  // Public helpers.
+  window.PMBDataJS = {
+    snapshot: currentSnapshot,
+    make: makeDataJs,
+    save: writeDataJs,
+    download: downloadDataJs,
+    schedule: scheduleWrite,
+    loadFile: loadDataJsFile
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    $("chooseProjectFolder")?.addEventListener("click", chooseProjectFolder);
+    $("saveDataJs")?.addEventListener("click", () => {
+      if (projectDirHandle) writeDataJs();
+      else downloadDataJs();
+    });
+    $("dataJsInput")?.addEventListener("change", async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try { await loadDataJsFile(file); }
+      catch (err) { console.error(err); alert("Không đọc được data.js: " + err.message); }
+      e.target.value = "";
+    });
+
+    // Re-open the previously selected project folder and load its old data.js automatically.
+    setTimeout(() => restoreProjectFolderAndDataJs(), 1500);
+    // Save the current state only after the old project data has had a chance to load.
+    setTimeout(() => {
+      if (projectDirHandle) writeDataJs();
+    }, 2500);
+  });
+
+  // Automatically update data.js whenever common app mutations call render().
+  // This does not store audio bytes.
+  const oldRender = window.render;
+  if (typeof oldRender === "function") {
+    window.render = function(...args) {
+      const result = oldRender.apply(this, args);
+      scheduleWrite();
+      return result;
+    };
+  }
+})();
+</script>
+
+
+<div class="modal-backdrop" id="metadataModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="metadataTitle">
+    <div class="modal-head">
+      <h3 id="metadataTitle">🎵 Chỉnh Metadata</h3>
+      <button id="closeMetadataBtn" class="iconbtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="meta-grid">
+        <label>Title<input id="metaTitle" type="text"></label>
+        <label>Artist<input id="metaArtist" type="text"></label>
+        <label>Album<input id="metaAlbum" type="text"></label>
+        <label>Genre<input id="metaGenre" type="text"></label>
+        <label>Year<input id="metaYear" type="number" min="0" max="9999"></label>
+        <label>Track number<input id="metaTrackNumber" type="number" min="1" max="9999"></label>
+        <label class="full">Comment<textarea id="metaComment" placeholder="Ghi chú / thông tin remix..."></textarea></label>
+      </div>
+      <div class="cover-box">
+        <img id="metaCoverPreview" class="cover-preview" alt="Cover preview">
+        <div style="flex:1">
+          <div style="font-size:12px;margin-bottom:5px">Cover</div>
+          <input id="metaCover" type="file" accept="image/jpeg,image/png,image/webp">
+          <div class="hint">Ảnh được lưu cùng dữ liệu bài trong trình duyệt. data.js chỉ lưu metadata, không nhúng dữ liệu ảnh/âm thanh.</div>
+        </div>
+        <button id="removeCoverBtn" class="small danger">Xoá cover</button>
+      </div>
+      <div class="hint" style="margin-top:12px">Tên file nguồn vẫn được giữ riêng. Title/Artist/Album... dùng làm metadata của bài và làm nội dung tracklist/timestamp khi xuất.</div>
+    </div>
+    <div class="modal-foot">
+      <button id="cancelMetadataBtn">Huỷ</button>
+      <button id="saveMetadataBtn" class="primary">💾 Lưu metadata</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
